@@ -3,123 +3,162 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Factory Planet Idle</title>
-    <link rel="manifest" href="manifest.json">
+    <title>Factory Planet 20x20</title>
     <style>
-        :root { --bg: #1a1a1a; --panel: #2d2d2d; --accent: #ff9800; --iron: #9e9e9e; }
-        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: white; margin: 0; overflow: hidden; touch-action: manipulation; }
+        :root { --bg: #121212; --panel: #1e1e1e; --accent: #ff9800; --blue: #2196f3; }
+        body { font-family: 'Consolas', monospace; background: var(--bg); color: white; margin: 0; overflow: hidden; touch-action: none; }
         
-        /* Header & Power */
-        #header { padding: 10px; background: var(--panel); display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #444; }
-        .power-bar-bg { width: 100px; height: 10px; background: #000; border-radius: 5px; overflow: hidden; }
-        #power-fill { height: 100%; background: #4caf50; width: 0%; transition: 0.3s; }
+        /* HUD */
+        #hud { position: fixed; top: 0; width: 100%; background: var(--panel); z-index: 100; padding: 10px; display: flex; justify-content: space-between; border-bottom: 2px solid #333; box-sizing: border-box; }
+        .stat { font-size: 14px; margin-bottom: 5px; }
+        #tier-display { color: var(--accent); font-weight: bold; }
 
-        /* Grille de jeu */
-        #game-container { display: flex; justify-content: center; align-items: center; height: 70vh; overflow: auto; background: #111; }
-        #grid { display: grid; grid-template-columns: repeat(5, 60px); grid-template-rows: repeat(5, 60px); gap: 4px; padding: 10px; }
-        .cell { width: 60px; height: 60px; background: #222; border-radius: 4px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 10px; position: relative; border: 1px solid #333; }
-        .cell.iron { border: 2px solid var(--iron); }
-        .cell.occupied { background: #444; }
+        /* Conteneur Grille (Zoomable) */
+        #viewport { width: 100vw; height: 100vh; overflow: hidden; cursor: grab; background: #0a0a0a; display: flex; align-items: center; justify-content: center; }
+        #grid { 
+            display: grid; 
+            grid-template-columns: repeat(20, 40px); 
+            grid-template-rows: repeat(20, 40px); 
+            gap: 2px; 
+            transform-origin: center;
+        }
 
-        /* Barre de construction mobile (bas) */
-        #toolbar { position: fixed; bottom: 0; width: 100%; background: var(--panel); display: flex; justify-content: space-around; padding: 15px 0; border-top: 2px solid #444; }
-        .build-btn { background: #3d3d3d; border: 1px solid var(--accent); color: white; padding: 10px; border-radius: 8px; font-size: 12px; }
+        .cell { width: 40px; height: 40px; background: #1a1a1a; border: 1px solid #252525; display: flex; align-items: center; justify-content: center; font-size: 16px; }
+        .cell.iron { background: #2a2a2a; color: #777; border-color: #444; }
+        .cell.occupied { background: #333; box-shadow: inset 0 0 5px rgba(0,0,0,0.5); }
         
-        .resource-pop { position: absolute; top: -10px; color: var(--accent); animation: float 1s forwards; pointer-events: none; }
-        @keyframes float { from { opacity: 1; transform: translateY(0); } to { opacity: 0; transform: translateY(-20px); } }
+        /* Menu de construction */
+        #controls { position: fixed; bottom: 0; width: 100%; background: var(--panel); padding: 15px; display: flex; gap: 10px; overflow-x: auto; border-top: 2px solid #333; z-index: 100; }
+        button { background: #333; color: white; border: 1px solid #555; padding: 10px 15px; border-radius: 4px; white-space: nowrap; }
+        button.active { border-color: var(--accent); background: #443311; }
+        button:disabled { opacity: 0.3; }
+
+        /* Power Bar */
+        .p-bar { width: 80px; height: 8px; background: #000; display: inline-block; vertical-align: middle; }
+        #p-fill { height: 100%; background: #4caf50; width: 0%; transition: 0.3s; }
     </style>
 </head>
 <body>
 
-<div id="header">
-    <div>⚙️ <span id="iron-count">0</span> Iron</div>
+<div id="hud">
+    <div>
+        <div class="stat">📦 <span id="res-iron">0</span> Iron</div>
+        <div class="stat">⚡ <div class="p-bar"><div id="p-fill"></div></div></div>
+    </div>
     <div style="text-align: right;">
-        <small>Power</small>
-        <div class="power-bar-bg"><div id="power-fill"></div></div>
+        <div id="tier-display">TIER 1</div>
+        <button id="upgrade-btn" onclick="upgradeTier()">Upgrade (1000 Fe)</button>
     </div>
 </div>
 
-<div id="game-container">
+<div id="viewport" id="v-port">
     <div id="grid"></div>
 </div>
 
-<div id="toolbar">
-    <button class="build-btn" onclick="setSelection('miner')">Mines (50 Fe)</button>
-    <button class="build-btn" onclick="setSelection('solar')">Solaire (30 Fe)</button>
+<div id="controls">
+    <button id="btn-miner" onclick="setMode('miner')">⛏️ Mineur (50)</button>
+    <button id="btn-solar" onclick="setMode('solar')">☀️ Solaire (30)</button>
+    <button id="btn-battery" onclick="setMode('battery')">🔋 Batterie (100)</button>
 </div>
 
 <script>
-    let resources = { iron: 100 };
-    let power = { prod: 0, cons: 0 };
-    let grid = [];
-    let selectedBuilding = null;
+    let state = {
+        iron: 100,
+        tier: 1,
+        mode: null,
+        offset: { x: 0, y: 0 },
+        isDragging: false,
+        lastMouse: { x: 0, y: 0 }
+    };
 
-    // Initialisation de la planète
-    function initGrid() {
-        const gridEl = document.getElementById('grid');
-        for (let i = 0; i < 25; i++) {
-            let hasIron = Math.random() > 0.8;
-            let cell = { id: i, type: hasIron ? 'iron' : 'empty', building: null, amount: hasIron ? 500 : 0 };
-            grid.push(cell);
-            
-            let div = document.createElement('div');
-            div.className = `cell ${cell.type}`;
-            div.id = `cell-${i}`;
-            div.onclick = () => build(i);
-            gridEl.appendChild(div);
-            updateCellUI(i);
+    let gridData = [];
+    const GRID_SIZE = 20;
+
+    // Création de la grille
+    const gridEl = document.getElementById('grid');
+    for (let i = 0; i < GRID_SIZE * GRID_SIZE; i++) {
+        let isIron = Math.random() > 0.92;
+        gridData.push({ id: i, type: isIron ? 'iron' : 'empty', build: null, stock: 1000 });
+        let cell = document.createElement('div');
+        cell.className = 'cell' + (isIron ? ' iron' : '');
+        cell.id = 'c-' + i;
+        cell.onclick = () => handleCellClick(i);
+        gridEl.appendChild(cell);
+    }
+
+    function setMode(m) {
+        state.mode = m;
+        document.querySelectorAll('#controls button').forEach(b => b.classList.remove('active'));
+        if(m) document.getElementById('btn-' + m).classList.add('active');
+    }
+
+    function handleCellClick(i) {
+        let cell = gridData[i];
+        if (cell.build) return;
+
+        if (state.mode === 'miner' && state.iron >= 50 && cell.type === 'iron') {
+            state.iron -= 50; cell.build = 'miner';
+        } else if (state.mode === 'solar' && state.iron >= 30) {
+            state.iron -= 30; cell.build = 'solar';
+        } else if (state.mode === 'battery' && state.iron >= 100) {
+            state.iron -= 100; cell.build = 'battery';
+        }
+        updateCell(i);
+    }
+
+    function updateCell(i) {
+        let c = gridData[i];
+        let el = document.getElementById('c-' + i);
+        if (c.build) {
+            el.classList.add('occupied');
+            el.innerHTML = c.build === 'miner' ? '⛏️' : (c.build === 'solar' ? '☀️' : '🔋');
         }
     }
 
-    function setSelection(type) { selectedBuilding = type; }
-
-    function build(i) {
-        let cell = grid[i];
-        if (cell.building) return;
-
-        if (selectedBuilding === 'miner' && resources.iron >= 50 && cell.type === 'iron') {
-            resources.iron -= 50;
-            cell.building = 'miner';
-        } else if (selectedBuilding === 'solar' && resources.iron >= 30) {
-            resources.iron -= 30;
-            cell.building = 'solar';
+    function upgradeTier() {
+        let cost = state.tier * 1000;
+        if (state.iron >= cost) {
+            state.iron -= cost;
+            state.tier++;
+            document.getElementById('tier-display').innerText = "TIER " + state.tier;
+            document.getElementById('upgrade-btn').innerText = `Upgrade (${(state.tier) * 1000} Fe)`;
         }
-        updateUI();
-        updateCellUI(i);
     }
 
-    function updateCellUI(i) {
-        let cell = grid[i];
-        let div = document.getElementById(`cell-${i}`);
-        div.innerHTML = cell.building ? (cell.building === 'miner' ? '⛏️' : '☀️') : (cell.type === 'iron' ? '🪨' : '');
-        if (cell.building) div.classList.add('occupied');
-    }
+    // Boucle de jeu
+    setInterval(() => {
+        let miners = gridData.filter(c => c.build === 'miner');
+        let solars = gridData.filter(c => c.build === 'solar');
+        
+        let prod = solars.length * (5 * state.tier);
+        let cons = miners.length * 3;
+        let efficiency = prod >= cons ? 1 : (prod / (cons || 1));
 
-    function gameLoop() {
-        power.prod = grid.filter(c => c.building === 'solar').length * 10;
-        power.cons = grid.filter(c => c.building === 'miner').length * 5;
-        let efficiency = power.prod >= power.cons ? 1 : (power.prod / power.cons);
-
-        grid.forEach((cell, i) => {
-            if (cell.building === 'miner' && cell.amount > 0) {
-                let gain = 1 * efficiency;
-                cell.amount -= gain;
-                resources.iron += gain;
-                if (cell.amount <= 0) { cell.building = null; cell.type = 'empty'; updateCellUI(i); }
+        miners.forEach(m => {
+            if (m.stock > 0) {
+                let qty = (0.5 * state.tier) * efficiency;
+                state.iron += qty;
+                m.stock -= qty;
             }
         });
 
-        updateUI();
-    }
+        document.getElementById('res-iron').innerText = Math.floor(state.iron);
+        document.getElementById('p-fill').style.width = (efficiency * 100) + "%";
+        document.getElementById('p-fill').style.background = efficiency < 1 ? "#f44336" : "#4caf50";
+        document.getElementById('upgrade-btn').disabled = state.iron < (state.tier * 1000);
+    }, 1000);
 
-    function updateUI() {
-        document.getElementById('iron-count').innerText = Math.floor(resources.iron);
-        document.getElementById('power-fill').style.width = Math.min(100, (power.cons / (power.prod || 1)) * 100) + "%";
-        document.getElementById('power-fill').style.background = power.prod >= power.cons ? "#4caf50" : "#f44336";
-    }
-
-    initGrid();
-    setInterval(gameLoop, 1000);
+    // Système de Drag pour Mobile
+    const viewport = document.getElementById('viewport');
+    viewport.onpointerdown = (e) => { state.isDragging = true; state.lastMouse = { x: e.clientX, y: e.clientY }; };
+    window.onpointerup = () => state.isDragging = false;
+    window.onpointermove = (e) => {
+        if (!state.isDragging) return;
+        state.offset.x += e.clientX - state.lastMouse.x;
+        state.offset.y += e.clientY - state.lastMouse.y;
+        gridEl.style.transform = `translate(${state.offset.x}px, ${state.offset.y}px)`;
+        state.lastMouse = { x: e.clientX, y: e.clientY };
+    };
 </script>
 </body>
 </html>
