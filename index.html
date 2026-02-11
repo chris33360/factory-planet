@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Factory Planet Idle</title>
+    <link rel="manifest" href="manifest.json">
+    <style>
+        :root { --bg: #1a1a1a; --panel: #2d2d2d; --accent: #ff9800; --iron: #9e9e9e; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: white; margin: 0; overflow: hidden; touch-action: manipulation; }
+        
+        /* Header & Power */
+        #header { padding: 10px; background: var(--panel); display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #444; }
+        .power-bar-bg { width: 100px; height: 10px; background: #000; border-radius: 5px; overflow: hidden; }
+        #power-fill { height: 100%; background: #4caf50; width: 0%; transition: 0.3s; }
+
+        /* Grille de jeu */
+        #game-container { display: flex; justify-content: center; align-items: center; height: 70vh; overflow: auto; background: #111; }
+        #grid { display: grid; grid-template-columns: repeat(5, 60px); grid-template-rows: repeat(5, 60px); gap: 4px; padding: 10px; }
+        .cell { width: 60px; height: 60px; background: #222; border-radius: 4px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 10px; position: relative; border: 1px solid #333; }
+        .cell.iron { border: 2px solid var(--iron); }
+        .cell.occupied { background: #444; }
+
+        /* Barre de construction mobile (bas) */
+        #toolbar { position: fixed; bottom: 0; width: 100%; background: var(--panel); display: flex; justify-content: space-around; padding: 15px 0; border-top: 2px solid #444; }
+        .build-btn { background: #3d3d3d; border: 1px solid var(--accent); color: white; padding: 10px; border-radius: 8px; font-size: 12px; }
+        
+        .resource-pop { position: absolute; top: -10px; color: var(--accent); animation: float 1s forwards; pointer-events: none; }
+        @keyframes float { from { opacity: 1; transform: translateY(0); } to { opacity: 0; transform: translateY(-20px); } }
+    </style>
+</head>
+<body>
+
+<div id="header">
+    <div>⚙️ <span id="iron-count">0</span> Iron</div>
+    <div style="text-align: right;">
+        <small>Power</small>
+        <div class="power-bar-bg"><div id="power-fill"></div></div>
+    </div>
+</div>
+
+<div id="game-container">
+    <div id="grid"></div>
+</div>
+
+<div id="toolbar">
+    <button class="build-btn" onclick="setSelection('miner')">Mines (50 Fe)</button>
+    <button class="build-btn" onclick="setSelection('solar')">Solaire (30 Fe)</button>
+</div>
+
+<script>
+    let resources = { iron: 100 };
+    let power = { prod: 0, cons: 0 };
+    let grid = [];
+    let selectedBuilding = null;
+
+    // Initialisation de la planète
+    function initGrid() {
+        const gridEl = document.getElementById('grid');
+        for (let i = 0; i < 25; i++) {
+            let hasIron = Math.random() > 0.8;
+            let cell = { id: i, type: hasIron ? 'iron' : 'empty', building: null, amount: hasIron ? 500 : 0 };
+            grid.push(cell);
+            
+            let div = document.createElement('div');
+            div.className = `cell ${cell.type}`;
+            div.id = `cell-${i}`;
+            div.onclick = () => build(i);
+            gridEl.appendChild(div);
+            updateCellUI(i);
+        }
+    }
+
+    function setSelection(type) { selectedBuilding = type; }
+
+    function build(i) {
+        let cell = grid[i];
+        if (cell.building) return;
+
+        if (selectedBuilding === 'miner' && resources.iron >= 50 && cell.type === 'iron') {
+            resources.iron -= 50;
+            cell.building = 'miner';
+        } else if (selectedBuilding === 'solar' && resources.iron >= 30) {
+            resources.iron -= 30;
+            cell.building = 'solar';
+        }
+        updateUI();
+        updateCellUI(i);
+    }
+
+    function updateCellUI(i) {
+        let cell = grid[i];
+        let div = document.getElementById(`cell-${i}`);
+        div.innerHTML = cell.building ? (cell.building === 'miner' ? '⛏️' : '☀️') : (cell.type === 'iron' ? '🪨' : '');
+        if (cell.building) div.classList.add('occupied');
+    }
+
+    function gameLoop() {
+        power.prod = grid.filter(c => c.building === 'solar').length * 10;
+        power.cons = grid.filter(c => c.building === 'miner').length * 5;
+        let efficiency = power.prod >= power.cons ? 1 : (power.prod / power.cons);
+
+        grid.forEach((cell, i) => {
+            if (cell.building === 'miner' && cell.amount > 0) {
+                let gain = 1 * efficiency;
+                cell.amount -= gain;
+                resources.iron += gain;
+                if (cell.amount <= 0) { cell.building = null; cell.type = 'empty'; updateCellUI(i); }
+            }
+        });
+
+        updateUI();
+    }
+
+    function updateUI() {
+        document.getElementById('iron-count').innerText = Math.floor(resources.iron);
+        document.getElementById('power-fill').style.width = Math.min(100, (power.cons / (power.prod || 1)) * 100) + "%";
+        document.getElementById('power-fill').style.background = power.prod >= power.cons ? "#4caf50" : "#f44336";
+    }
+
+    initGrid();
+    setInterval(gameLoop, 1000);
+</script>
+</body>
+</html>
