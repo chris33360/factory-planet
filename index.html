@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Factory Planet - Production Stats</title>
+    <title>Factory Planet - Power Logic Restored</title>
     <style>
         :root { 
             --bg: #0f0f0f; --panel: #1a1a1a; --accent: #ff9800; 
@@ -45,9 +45,12 @@
 <div id="alert">⚠️ MÉTÉORE EN APPROCHE ! ⚠️</div>
 
 <div id="left-panel">
-    <h3 style="font-size:11px; color:var(--accent);">🔨 BÂTIMENTS</h3>
+    <h3 style="font-size:11px; color:var(--accent);">🔨 ÉNERGIE</h3>
     <button class="build-btn" id="btn-solar" onclick="setMode('solar')">☀️ Solaire <span>40Fe, 20Cu</span></button>
-    <button class="build-btn" id="btn-battery_block" onclick="setMode('battery_block')">🗄️ Stockage <span>50Fe, 20Bat</span></button>
+    <button class="build-btn" id="btn-oil_gen" onclick="setMode('oil_gen')">🔥 Générateur <span>150Fe, 50Gls</span></button>
+    <button class="build-btn" id="btn-battery_block" onclick="setMode('battery_block')">🗄️ Stockage (10) <span>50Fe, 20Bat</span></button>
+    
+    <h3 style="font-size:11px; color:var(--accent); margin-top:10px;">🏭 USINES</h3>
     <button class="build-btn" id="btn-miner" onclick="setMode('miner')">⛏️ Mineur <span>50Fe</span></button>
     <button class="build-btn" id="btn-glass_factory" onclick="setMode('glass_factory')">🏺 Verre <span>80Fe, 40Qz</span></button>
     <button class="build-btn" id="btn-plastic_factory" onclick="setMode('plastic_factory')">🧪 Plastique <span>100Fe, 50Oil</span></button>
@@ -90,7 +93,7 @@
     ];
 
     const COSTS = {
-        solar: { iron: 40, copper: 20 }, battery_block: { iron: 50, battery: 20 },
+        solar: { iron: 40, copper: 20 }, oil_gen: { iron: 150, glass: 50 }, battery_block: { iron: 50, battery: 20 },
         miner: { iron: 50 }, glass_factory: { iron: 80, quartz: 40 }, plastic_factory: { iron: 100 },
         cable_factory: { iron: 60, copper: 40 }, motor_factory: { iron: 120, copper: 60 },
         battery_factory: { iron: 150, copper: 50 }, robot_factory: { motor: 10 }, rocket_factory: { iron: 500 }
@@ -166,9 +169,15 @@
         document.getElementById('main-body').className = isNight ? 'night-mode' : '';
         document.getElementById('time-display').innerText = isNight ? '🌙 NUIT' : '☀️ JOUR';
 
+        // Énergie Production
         let prod = gridData.filter(c => c.build === 'solar').length * (isNight ? 2 : 15);
+        gridData.filter(c => c.build === 'oil_gen').forEach(c => {
+            if(state.res.oil >= 1) { state.res.oil -= 1; prod += 80; }
+        });
+
         state.maxEnergy = gridData.filter(c => c.build === 'battery_block').length * 10;
         
+        // Énergie Consommation
         let cons = 0;
         gridData.forEach(c => {
             if(!c.build || Date.now() < c.deadUntil) return;
@@ -176,20 +185,23 @@
             if(pMap[c.build]) cons += pMap[c.build];
         });
 
-        state.energy = Math.max(0, Math.min(state.maxEnergy, state.energy + (prod - cons)));
-        let hasPower = (prod - cons >= 0 || state.energy > 0);
+        // Ratio de production (0 à 1)
+        let totalAvailable = prod + state.energy;
+        let powerRatio = cons > 0 ? Math.min(1, totalAvailable / cons) : 1;
 
-        const mult = {1:1, 2:1.5, 3:2.5, 4:5}[state.tier];
+        state.energy = Math.max(0, Math.min(state.maxEnergy, state.energy + (prod - (cons * powerRatio))));
+
+        const mult = {1:1, 2:1.5, 3:2.5, 4:5}[state.tier] * powerRatio;
         let diff = { iron: 0, copper: 0, quartz: 0, oil: 0, glass: 0, plastic: 0, cable: 0, motor: 0, battery: 0, robot: 0, rocket: 0 };
 
         gridData.forEach((c, idx) => {
             const el = document.getElementById('c-' + idx);
             const isDead = Date.now() < c.deadUntil;
             el.className = `cell ${c.type} ${isDead ? 'impact' : ''}`;
-            const icons = { solar:'☀️', battery_block:'🗄️', miner:'⛏️', glass_factory:'🏺', plastic_factory:'🧪', motor_factory:'⚙️', cable_factory:'🔌', battery_factory:'🔋', robot_factory:'🤖', rocket_factory:'🚀' };
+            const icons = { solar:'☀️', oil_gen:'🔥', battery_block:'🗄️', miner:'⛏️', glass_factory:'🏺', plastic_factory:'🧪', motor_factory:'⚙️', cable_factory:'🔌', battery_factory:'🔋', robot_factory:'🤖', rocket_factory:'🚀' };
             el.innerHTML = c.build ? icons[c.build] : (isDead ? '🔥' : '');
 
-            if(c.build && !isDead && hasPower) {
+            if(c.build && !isDead && powerRatio > 0) {
                 if(c.build === 'miner') { state.res[c.type] += mult; diff[c.type] += mult; }
                 if(c.build === 'glass_factory' && state.res.quartz >= 1) { state.res.quartz--; diff.quartz--; state.res.glass += mult; diff.glass += mult; }
                 if(c.build === 'plastic_factory' && state.res.oil >= 1) { state.res.oil--; diff.oil--; state.res.plastic += mult; diff.plastic += mult; }
@@ -201,15 +213,16 @@
             }
         });
 
+        // Affichage HUD
         const resDiv = document.getElementById('res-display');
         resDiv.innerHTML = Object.entries(state.res).map(([k,v]) => {
             let d = diff[k];
-            let dText = d >= 0 ? `<span class="prod-stat plus">+${d}</span>` : `<span class="prod-stat minus">${d}</span>`;
+            let dText = d >= 0 ? `<span class="prod-stat plus">+${d.toFixed(1)}</span>` : `<span class="prod-stat minus">${d.toFixed(1)}</span>`;
             return `<div class="res-item"><span>${k.toUpperCase().slice(0,3)}: ${Math.floor(v)}</span>${dText}</div>`;
         }).join('');
         
         document.getElementById('power-fill').style.width = (state.maxEnergy > 0 ? (state.energy/state.maxEnergy)*100 : 0) + '%';
-        document.getElementById('power-text').innerText = `STOCK: ${Math.floor(state.energy)}/${state.maxEnergy} | CONS: ${cons}W | PROD: ${prod}W`;
+        document.getElementById('power-text').innerText = `STOCK: ${Math.floor(state.energy)}/${state.maxEnergy} | CONS: ${Math.floor(cons * powerRatio)}W | PROD: ${prod}W`;
         updateTierUI();
     }, 1000);
 
