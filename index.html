@@ -3,38 +3,46 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Factory Planet - Fixed Mining</title>
+    <title>Factory Planet - New HUD</title>
     <style>
         :root { 
             --bg: #0f0f0f; --panel: #1a1a1a; --accent: #ff9800; 
             --iron: #3d3d3d; --copper: #5d2a1c; --quartz: #004d40; --oil: #111;
-            --power: #4caf50; --danger: #f44336; --energy: #ffeb3b;
+            --power: #4caf50; --danger: #f44336; --energy: #2196F3; /* Bleu pour la batterie */
         }
         body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: white; margin: 0; overflow: hidden; display: flex; height: 100vh; }
         #left-panel { width: 140px; background: var(--panel); border-right: 1px solid #333; display: flex; flex-direction: column; gap: 5px; padding: 10px; overflow-y: auto; flex-shrink: 0; }
         #game-area { flex-grow: 1; position: relative; display: flex; flex-direction: column; overflow: hidden; }
         #right-panel { width: 180px; background: var(--panel); border-left: 1px solid #333; padding: 10px; overflow-y: auto; flex-shrink: 0; }
-        #hud { background: rgba(0,0,0,0.9); padding: 10px; border-bottom: 1px solid #333; }
-        .res-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; font-size: 10px; margin-bottom: 8px; }
+        
+        /* Nouveau HUD en ligne */
+        #hud { background: rgba(0,0,0,0.9); padding: 8px; border-bottom: 1px solid #333; }
+        .res-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; font-size: 10px; margin-bottom: 8px; }
         .res-item { background: #222; padding: 2px 4px; border-radius: 2px; border: 1px solid #333; display: flex; justify-content: space-between; }
+        
+        #power-row { display: flex; align-items: center; gap: 15px; font-size: 11px; font-weight: bold; }
+        #power-container { background: #000; border: 1px solid #333; height: 16px; width: 200px; position: relative; border-radius: 3px; overflow: hidden; }
+        #power-fill { background: var(--energy); height: 100%; width: 0%; transition: width 0.3s; }
+        #power-text { position: absolute; width: 100%; text-align: center; font-size: 9px; top: 1px; color: white; text-shadow: 1px 1px black; }
+        
         .prod-stat { font-size: 8px; font-weight: bold; margin-left: 4px; }
         .plus { color: #4caf50; } .minus { color: #f44336; }
-        #power-container { background: #000; border: 1px solid #333; height: 18px; position: relative; border-radius: 4px; }
-        #power-fill { background: var(--energy); height: 100%; width: 0%; transition: width 0.3s; }
-        #power-text { position: absolute; width: 100%; text-align: center; font-size: 10px; top: 2px; font-weight: bold; color: white; text-shadow: 1px 1px black; }
+        
         #viewport { flex-grow: 1; overflow: auto; display: flex; align-items: center; justify-content: center; background: #080808; padding: 20px; }
         #grid { display: grid; grid-template-columns: repeat(45, 35px); grid-template-rows: repeat(22, 35px); gap: 1px; }
         .cell { width: 35px; height: 35px; background: #141414; border: 1px solid #1f1f1f; display: flex; align-items: center; justify-content: center; font-size: 16px; cursor: pointer; }
         .cell.iron { background: var(--iron); } .cell.copper { background: var(--copper); } 
         .cell.quartz { background: var(--quartz); } .cell.oil { background: var(--oil); }
         .cell.impact { background-color: var(--danger) !important; animation: shake 0.2s infinite; }
+        
         .build-btn { background: #2a2a2a; color: white; border: 1px solid #444; padding: 6px; border-radius: 4px; font-size: 10px; cursor: pointer; text-align: left; }
         .build-btn span { display: block; font-size: 8px; color: #888; }
         .build-btn.active { border-color: var(--accent); background: #3d2a00; }
+        
         .tech-item { background: #222; border: 1px solid #444; padding: 10px; border-radius: 6px; margin-bottom: 12px; font-size: 11px; }
         .tech-item.current { border: 1px solid var(--accent); background: #2a2010; }
-        .tech-item.unlocked { border: 1px solid var(--power); opacity: 0.6; }
         .tech-btn { width: 100%; background: var(--accent); border: none; padding: 6px; margin-top: 8px; font-weight: bold; cursor: pointer; border-radius: 3px; }
+        
         @keyframes shake { 0% { transform: translate(1px); } 100% { transform: translate(-1px); } }
         #alert { position: fixed; top: 100px; left: 50%; transform: translateX(-50%); background: var(--danger); color: white; padding: 15px; z-index: 1000; display: none; font-weight: bold; border-radius: 5px; }
         .night-mode #viewport { filter: brightness(0.4); }
@@ -48,7 +56,7 @@
     <h3 style="font-size:11px; color:var(--accent);">🔨 ÉNERGIE</h3>
     <button class="build-btn" id="btn-solar" onclick="setMode('solar')">☀️ Solaire <span>40Fe, 20Cu</span></button>
     <button class="build-btn" id="btn-oil_gen" onclick="setMode('oil_gen')">🔥 Générateur <span>150Fe, 50Gls</span></button>
-    <button class="build-btn" id="btn-battery_block" onclick="setMode('battery_block')">🗄️ Stockage (10) <span>50Fe, 20Bat</span></button>
+    <button class="build-btn" id="btn-battery_block" onclick="setMode('battery_block')">🗄️ Stockage (30) <span>50Fe, 20Bat</span></button>
     
     <h3 style="font-size:11px; color:var(--accent); margin-top:10px;">🏭 USINES</h3>
     <button class="build-btn" id="btn-miner" onclick="setMode('miner')">⛏️ Mineur <span>50Fe</span></button>
@@ -65,11 +73,14 @@
 <div id="game-area">
     <div id="hud">
         <div class="res-grid" id="res-display"></div>
-        <div id="power-container">
-            <div id="power-fill"></div>
-            <div id="power-text">STOCK: 0 / 0 | BESOIN: 0W | PROD: 0W</div>
+        <div id="power-row">
+            <div id="time-display">☀️ JOUR</div>
+            <div id="power-container">
+                <div id="power-fill"></div>
+                <div id="power-text">STOCK: 0 / 0</div>
+            </div>
+            <div id="power-stats">PROD: 0W | BESOIN: 0W</div>
         </div>
-        <div id="time-display" style="font-size: 11px; text-align: center; margin-top: 5px;">☀️ JOUR</div>
     </div>
     <div id="viewport"><div id="grid"></div></div>
 </div>
@@ -132,12 +143,7 @@
         if(Date.now() < gridData[i].deadUntil) return;
         if (state.mode === 'recycle') { gridData[i].build = null; return; }
         if (gridData[i].build || !state.mode) return;
-
-        // VERIFICATION MINEUR : Uniquement sur fer, cuivre, quartz ou pétrole
-        if (state.mode === 'miner' && gridData[i].type === 'empty') {
-            console.log("Impossible de poser un mineur sur du vide !");
-            return; 
-        }
+        if (state.mode === 'miner' && gridData[i].type === 'empty') return;
 
         let cost = COSTS[state.mode];
         if (cost && Object.keys(cost).every(r => state.res[r] >= cost[r])) {
@@ -157,7 +163,7 @@
         list.innerHTML = "";
         TECHS.forEach(t => {
             let div = document.createElement('div');
-            div.className = `tech-item ${state.tier === t.id ? 'current' : ''} ${state.tier > t.id ? 'unlocked' : ''}`;
+            div.className = `tech-item ${state.tier === t.id ? 'current' : ''}`;
             let canAfford = Object.entries(t.cost).every(([r, v]) => state.res[r] >= v);
             div.innerHTML = `<b>TIER ${t.id}</b><br><small>${t.bonus}</small><br>`;
             Object.entries(t.cost).forEach(([r,v]) => { div.innerHTML += `<div style="font-size:9px">• ${v} ${r}</div>`; });
@@ -177,11 +183,9 @@
         document.getElementById('time-display').innerText = isNight ? '🌙 NUIT' : '☀️ JOUR';
 
         let prod = gridData.filter(c => c.build === 'solar').length * (isNight ? 2 : 15);
-        gridData.filter(c => c.build === 'oil_gen').forEach(c => {
-            if(state.res.oil >= 1) { state.res.oil -= 1; prod += 80; }
-        });
+        gridData.filter(c => c.build === 'oil_gen').forEach(c => { if(state.res.oil >= 1) { state.res.oil -= 1; prod += 80; } });
 
-        state.maxEnergy = gridData.filter(c => c.build === 'battery_block').length * 10;
+        state.maxEnergy = gridData.filter(c => c.build === 'battery_block').length * 30; // 30 par bloc
         
         let need = 0; 
         gridData.forEach(c => {
@@ -192,7 +196,6 @@
 
         let totalAvailable = prod + state.energy;
         let powerRatio = need > 0 ? Math.min(1, totalAvailable / need) : 1;
-
         state.energy = Math.max(0, Math.min(state.maxEnergy, state.energy + (prod - (need * powerRatio))));
 
         const mult = {1:1, 2:1.5, 3:2.5, 4:5}[state.tier] * powerRatio;
@@ -217,6 +220,7 @@
             }
         });
 
+        // Maj HUD
         const resDiv = document.getElementById('res-display');
         resDiv.innerHTML = Object.entries(state.res).map(([k,v]) => {
             let d = diff[k];
@@ -225,7 +229,8 @@
         }).join('');
         
         document.getElementById('power-fill').style.width = (state.maxEnergy > 0 ? (state.energy/state.maxEnergy)*100 : 0) + '%';
-        document.getElementById('power-text').innerText = `STOCK: ${Math.floor(state.energy)}/${state.maxEnergy} | BESOIN: ${Math.floor(need)}W | PROD: ${prod}W`;
+        document.getElementById('power-text').innerText = `STOCK: ${Math.floor(state.energy)} / ${state.maxEnergy}`;
+        document.getElementById('power-stats').innerText = `PROD: ${prod}W | BESOIN: ${Math.floor(need)}W`;
         updateTierUI();
     }, 1000);
 
