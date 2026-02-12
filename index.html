@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Factory Planet - Fixed UI</title>
+    <title>Factory Planet - Fixed Tech & Meteors</title>
     <style>
         :root { 
             --bg: #0f0f0f; --panel: #1a1a1a; --accent: #ff9800; 
@@ -11,50 +11,47 @@
             --power: #4caf50; --danger: #f44336; --energy: #ffeb3b;
         }
         
-        /* LAYOUT GLOBAL */
         body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: white; margin: 0; overflow: hidden; display: flex; height: 100vh; }
         
-        /* PANNEAU GAUCHE (BUILD) */
-        #left-panel { width: 140px; background: var(--panel); border-right: 1px solid #333; display: flex; flex-direction: column; gap: 5px; padding: 10px; overflow-y: auto; z-index: 100; flex-shrink: 0; }
-        
-        /* CENTRE (JEU) */
+        /* LAYOUT */
+        #left-panel { width: 140px; background: var(--panel); border-right: 1px solid #333; display: flex; flex-direction: column; gap: 5px; padding: 10px; overflow-y: auto; flex-shrink: 0; }
         #game-area { flex-grow: 1; position: relative; display: flex; flex-direction: column; overflow: hidden; }
-        
-        /* PANNEAU DROITE (TECHS) */
-        #right-panel { width: 160px; background: var(--panel); border-left: 1px solid #333; padding: 10px; overflow-y: auto; z-index: 100; flex-shrink: 0; }
+        #right-panel { width: 180px; background: var(--panel); border-left: 1px solid #333; padding: 10px; overflow-y: auto; flex-shrink: 0; }
 
-        /* HUD & GRID */
-        #hud { background: rgba(0,0,0,0.8); padding: 10px; border-bottom: 1px solid #333; }
-        .res-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; font-size: 10px; margin-bottom: 8px; }
+        /* HUD */
+        #hud { background: rgba(0,0,0,0.9); padding: 10px; border-bottom: 1px solid #333; }
+        .res-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; font-size: 10px; margin-bottom: 8px; }
+        .res-item { background: #222; padding: 2px 4px; border-radius: 2px; border: 1px solid #333; }
         
-        #viewport { flex-grow: 1; overflow: hidden; display: flex; align-items: center; justify-content: center; background: #080808; cursor: grab; }
-        #grid { display: grid; grid-template-columns: repeat(45, 35px); grid-template-rows: repeat(22, 35px); gap: 1px; transition: transform 0.1s; }
-        
-        /* COMPOSANTS UI */
-        .build-btn { background: #2a2a2a; color: white; border: 1px solid #444; padding: 6px; border-radius: 4px; font-size: 10px; cursor: pointer; text-align: left; width: 100%; }
-        .build-btn span { display: block; font-size: 8px; color: #888; }
-        .build-btn.active { border-color: var(--accent); background: #3d2a00; }
-        
-        .tech-item { background: #222; border: 1px solid #444; padding: 8px; border-radius: 4px; margin-bottom: 10px; font-size: 10px; border-left: 3px solid #555; }
-        .tech-item.current { border-left-color: var(--accent); background: #2a2010; }
-        .tech-item.unlocked { border-left-color: var(--power); opacity: 0.6; }
-        .tech-btn { width: 100%; background: var(--accent); border: none; padding: 4px; margin-top: 5px; font-weight: bold; cursor: pointer; font-size: 9px; }
-        .tech-btn:disabled { background: #444; cursor: not-allowed; }
+        /* ENERGY */
+        #power-container { background: #000; border: 1px solid #333; height: 18px; position: relative; border-radius: 4px; }
+        #power-fill { background: var(--energy); height: 100%; width: 0%; transition: width 0.3s; }
+        #power-text { position: absolute; width: 100%; text-align: center; font-size: 10px; top: 2px; font-weight: bold; color: white; text-shadow: 1px 1px black; }
 
-        /* CELLULES */
-        .cell { width: 35px; height: 35px; background: #141414; border: 1px solid #1f1f1f; display: flex; align-items: center; justify-content: center; font-size: 16px; }
+        /* GRID */
+        #viewport { flex-grow: 1; overflow: auto; display: flex; align-items: center; justify-content: center; background: #080808; padding: 20px; }
+        #grid { display: grid; grid-template-columns: repeat(45, 35px); grid-template-rows: repeat(22, 35px); gap: 1px; }
+        
+        .cell { width: 35px; height: 35px; background: #141414; border: 1px solid #1f1f1f; display: flex; align-items: center; justify-content: center; font-size: 16px; cursor: pointer; }
         .cell.iron { background: var(--iron); } .cell.copper { background: var(--copper); } 
         .cell.quartz { background: var(--quartz); } .cell.oil { background: var(--oil); }
         .cell.impact { background-color: var(--danger) !important; animation: shake 0.2s infinite; }
         
-        /* ENERGY BAR */
-        #power-container { background: #000; border: 1px solid #333; height: 16px; position: relative; border-radius: 3px; }
-        #power-fill { background: var(--energy); height: 100%; width: 0%; transition: width 0.3s; }
-        #power-text { position: absolute; width: 100%; text-align: center; font-size: 9px; top: 1px; font-weight: bold; color: white; text-shadow: 1px 1px black; }
+        /* BUTTONS */
+        .build-btn { background: #2a2a2a; color: white; border: 1px solid #444; padding: 6px; border-radius: 4px; font-size: 10px; cursor: pointer; text-align: left; }
+        .build-btn span { display: block; font-size: 8px; color: #888; }
+        .build-btn.active { border-color: var(--accent); background: #3d2a00; box-shadow: 0 0 5px var(--accent); }
+        
+        /* TECH TIERS */
+        .tech-item { background: #222; border: 1px solid #444; padding: 10px; border-radius: 6px; margin-bottom: 12px; font-size: 11px; position: relative; }
+        .tech-item.current { border: 1px solid var(--accent); background: #2a2010; box-shadow: 0 0 8px rgba(255,152,0,0.2); }
+        .tech-item.unlocked { border: 1px solid var(--power); opacity: 0.6; background: #1b2e1b; }
+        .tech-btn { width: 100%; background: var(--accent); border: none; padding: 6px; margin-top: 8px; font-weight: bold; cursor: pointer; border-radius: 3px; }
+        .tech-btn:disabled { background: #444; color: #777; cursor: not-allowed; }
 
         @keyframes shake { 0% { transform: translate(1px); } 100% { transform: translate(-1px); } }
-        #alert { position: fixed; top: 80px; left: 50%; transform: translateX(-50%); background: var(--danger); padding: 10px; z-index: 1000; display: none; font-weight: bold; border-radius: 5px; }
-        .night-mode #viewport { filter: brightness(0.4); }
+        #alert { position: fixed; top: 100px; left: 50%; transform: translateX(-50%); background: var(--danger); color: white; padding: 15px; z-index: 1000; display: none; font-weight: bold; border-radius: 5px; box-shadow: 0 0 20px rgba(244,67,54,0.5); }
+        .night-mode #viewport { filter: brightness(0.4) contrast(1.2); }
     </style>
 </head>
 <body id="main-body">
@@ -62,7 +59,7 @@
 <div id="alert">⚠️ MÉTÉORE EN APPROCHE ! ⚠️</div>
 
 <div id="left-panel">
-    <h4 style="margin:5px 0; font-size:11px; color:var(--accent)">🔨 BÂTIR</h4>
+    <h3 style="font-size:12px; color:var(--accent); margin:0 0 10px 0;">🔨 CONSTRUCTION</h3>
     <button class="build-btn" id="btn-solar" onclick="setMode('solar')">☀️ Solaire <span>40Fe, 20Cu</span></button>
     <button class="build-btn" id="btn-battery_block" onclick="setMode('battery_block')">🗄️ Stockage <span>50Fe, 20Bat</span></button>
     <button class="build-btn" id="btn-miner" onclick="setMode('miner')">⛏️ Mineur <span>50Fe</span></button>
@@ -73,7 +70,8 @@
     <button class="build-btn" id="btn-battery_factory" onclick="setMode('battery_factory')">🔋 Batterie <span>150Fe, 50Cu</span></button>
     <button class="build-btn" id="btn-robot_factory" onclick="setMode('robot_factory')">🤖 Robot <span>Mot+Cab+Pla</span></button>
     <button class="build-btn" id="btn-rocket_factory" onclick="setMode('rocket_factory')">🚀 Fusée <span>Bat+Mot+Rob</span></button>
-    <button class="build-btn" onclick="setMode('recycle')" id="btn-recycle" style="color:var(--danger)">♻️ SUPPRIMER</button>
+    <hr style="width:100%; border:0; border-top:1px solid #333; margin:10px 0;">
+    <button class="build-btn" onclick="setMode('recycle')" id="btn-recycle" style="color:var(--danger); border-color:var(--danger)">♻️ DÉMOLIR</button>
 </div>
 
 <div id="game-area">
@@ -81,9 +79,9 @@
         <div class="res-grid" id="res-display"></div>
         <div id="power-container">
             <div id="power-fill"></div>
-            <div id="power-text">STOCK: 0 / 0 | CONS: 0W</div>
+            <div id="power-text">STOCK: 0 / 0 | PROD: 0W</div>
         </div>
-        <div id="time-display" style="font-size: 10px; text-align: center; margin-top: 5px;">☀️ JOUR</div>
+        <div id="time-display" style="font-size: 11px; text-align: center; margin-top: 5px; font-weight:bold;">☀️ JOUR</div>
     </div>
     <div id="viewport">
         <div id="grid"></div>
@@ -91,21 +89,21 @@
 </div>
 
 <div id="right-panel">
-    <h4 style="margin:5px 0; font-size:11px; color:var(--accent)">🚀 RECHERCHE</h4>
+    <h3 style="font-size:12px; color:var(--accent); margin:0 0 10px 0;">🚀 TECHNOLOGIES</h3>
     <div id="tier-list"></div>
 </div>
 
 <script>
     let state = {
-        res: { iron: 1000, copper: 500, quartz: 200, oil: 100, glass: 0, plastic: 0, cable: 0, motor: 0, battery: 0, robot: 0, rocket: 0 },
-        energy: 0, maxEnergy: 0, tier: 1, mode: null, time: 0, offset: {x:0, y:0}
+        res: { iron: 500, copper: 200, quartz: 100, oil: 50, glass: 0, plastic: 0, cable: 0, motor: 0, battery: 0, robot: 0, rocket: 0 },
+        energy: 0, maxEnergy: 0, tier: 1, mode: null, time: 0
     };
 
     const TECHS = [
-        { id: 1, name: "Base", bonus: "+0%", cost: {} },
-        { id: 2, name: "Industrie", bonus: "+20% Prod", cost: { iron: 1000, copper: 300 } },
-        { id: 3, name: "Électronique", bonus: "+50% Prod", cost: { glass: 200, cable: 200 } },
-        { id: 4, name: "Ère Spatiale", bonus: "+100% Prod", cost: { iron: 10000, motor: 300 } }
+        { id: 1, name: "Base", bonus: "Vitesse x1", cost: {} },
+        { id: 2, name: "Industrie", bonus: "Vitesse x1.5", cost: { iron: 500, copper: 200 } },
+        { id: 3, name: "Avancé", bonus: "Vitesse x2.5", cost: { plastic: 50, glass: 50 } },
+        { id: 4, name: "Spatiale", bonus: "Vitesse x5", cost: { robot: 20, rocket: 1 } }
     ];
 
     const COSTS = {
@@ -120,6 +118,8 @@
 
     function init() {
         const gridEl = document.getElementById('grid');
+        gridEl.innerHTML = "";
+        gridData = [];
         for (let i = 0; i < COLS * ROWS; i++) {
             let r = Math.random();
             let type = (r > 0.98) ? 'oil' : (r > 0.96) ? 'quartz' : (r > 0.93) ? 'copper' : (r > 0.88) ? 'iron' : 'empty';
@@ -130,37 +130,34 @@
             gridEl.appendChild(cell);
         }
         updateTierUI();
-        setInterval(spawnMeteor, 120000);
+        setInterval(spawnMeteor, 60000);
     }
 
     function spawnMeteor() {
-        document.getElementById('alert').style.display = 'block';
+        const alertBox = document.getElementById('alert');
+        alertBox.style.display = 'block';
         setTimeout(() => {
-            document.getElementById('alert').style.display = 'none';
+            alertBox.style.display = 'none';
             const center = Math.floor(Math.random() * (COLS * ROWS));
-            [center, center+1, center+COLS].forEach(idx => {
-                if(gridData[idx]) { gridData[idx].build = null; gridData[idx].deadUntil = Date.now() + 30000; updateCellUI(idx); }
+            const area = [center, center+1, center-1, center+COLS, center-COLS];
+            area.forEach(idx => {
+                if(gridData[idx]) {
+                    gridData[idx].build = null;
+                    gridData[idx].deadUntil = Date.now() + 30000; // 30 secondes
+                }
             });
-        }, 3000);
+        }, 2500);
     }
 
     function handleCellClick(i) {
         if(Date.now() < gridData[i].deadUntil) return;
-        if (state.mode === 'recycle') { gridData[i].build = null; updateCellUI(i); return; }
+        if (state.mode === 'recycle') { gridData[i].build = null; return; }
         if (gridData[i].build || !state.mode) return;
         let cost = COSTS[state.mode];
         if (cost && Object.keys(cost).every(r => state.res[r] >= cost[r])) {
             Object.keys(cost).forEach(r => state.res[r] -= cost[r]);
-            gridData[i].build = state.mode; updateCellUI(i);
+            gridData[i].build = state.mode;
         }
-    }
-
-    function updateCellUI(i) {
-        let c = gridData[i], el = document.getElementById('c-' + i);
-        const isDead = Date.now() < c.deadUntil;
-        el.className = `cell ${c.type} ${isDead ? 'impact' : ''}`;
-        const icons = { solar: '☀️', battery_block: '🗄️', miner: '⛏️', glass_factory: '🏺', plastic_factory: '🧪', motor_factory: '⚙️', cable_factory: '🔌', battery_factory: '🔋', robot_factory: '🤖', rocket_factory: '🚀' };
-        el.innerHTML = c.build ? icons[c.build] : (isDead ? '🔥' : '');
     }
 
     function setMode(m) {
@@ -170,27 +167,40 @@
     }
 
     function updateTierUI() {
-        const list = document.getElementById('tier-list'); list.innerHTML = "";
+        const list = document.getElementById('tier-list');
+        list.innerHTML = "";
         TECHS.forEach(t => {
             let div = document.createElement('div');
             div.className = `tech-item ${state.tier === t.id ? 'current' : ''} ${state.tier > t.id ? 'unlocked' : ''}`;
             let canAfford = Object.entries(t.cost).every(([r, v]) => state.res[r] >= v);
-            div.innerHTML = `<b>TIER ${t.id}</b><br>${t.bonus}<br><span style="font-size:8px">${Object.entries(t.cost).map(([r,v])=>r+":"+v).join(" ")}</span>`;
+            
+            let costLabels = Object.entries(t.cost).map(([r,v]) => `<div style="color:${state.res[r]>=v?'#4caf50':'#f44336'}">• ${v} ${r}</div>`).join("");
+            
+            div.innerHTML = `<b>TIER ${t.id} : ${t.name}</b><br><small>${t.bonus}</small><div style="margin-top:5px">${costLabels}</div>`;
+            
             if(state.tier === t.id - 1) {
-                let btn = document.createElement('button'); btn.className="tech-btn"; btn.innerText="RECHERCHER";
-                btn.disabled = !canAfford; btn.onclick = () => { Object.entries(t.cost).forEach(([r,v])=>state.res[r]-=v); state.tier=t.id; updateTierUI(); };
+                let btn = document.createElement('button');
+                btn.className="tech-btn"; btn.innerText="DÉBLOQUER";
+                btn.disabled = !canAfford;
+                btn.onclick = () => {
+                    Object.entries(t.cost).forEach(([r,v]) => state.res[r] -= v);
+                    state.tier = t.id;
+                    updateTierUI();
+                };
                 div.appendChild(btn);
             }
             list.appendChild(div);
         });
     }
 
+    // Boucle de Jeu principale (1s)
     setInterval(() => {
         state.time = (state.time + 1) % 60;
         const isNight = state.time >= 30;
         document.getElementById('main-body').className = isNight ? 'night-mode' : '';
         document.getElementById('time-display').innerText = isNight ? '🌙 NUIT' : '☀️ JOUR';
 
+        // Énergie
         let prod = gridData.filter(c => c.build === 'solar').length * (isNight ? 2 : 15);
         state.maxEnergy = gridData.filter(c => c.build === 'battery_block').length * 10;
         
@@ -202,10 +212,21 @@
         });
 
         state.energy = Math.max(0, Math.min(state.maxEnergy, state.energy + (prod - cons)));
-        if(prod - cons >= 0 || state.energy > 0) {
-            const mult = {1:1, 2:1.2, 3:1.5, 4:2}[state.tier];
-            gridData.forEach(c => {
-                if(!c.build || Date.now() < c.deadUntil) return;
+        let hasPower = (prod - cons >= 0 || state.energy > 0);
+
+        // Production et Mise à jour visuelle des cases
+        const mult = {1:1, 2:1.5, 3:2.5, 4:5}[state.tier];
+        gridData.forEach((c, idx) => {
+            const el = document.getElementById('c-' + idx);
+            const isDead = Date.now() < c.deadUntil;
+            
+            // Correction visuelle météore
+            el.className = `cell ${c.type} ${isDead ? 'impact' : ''}`;
+            const icons = { solar:'☀️', battery_block:'🗄️', miner:'⛏️', glass_factory:'🏺', plastic_factory:'🧪', motor_factory:'⚙️', cable_factory:'🔌', battery_factory:'🔋', robot_factory:'🤖', rocket_factory:'🚀' };
+            el.innerHTML = c.build ? icons[c.build] : (isDead ? '🔥' : '');
+
+            // Production
+            if(c.build && !isDead && hasPower) {
                 if(c.build === 'miner') state.res[c.type] += mult;
                 if(c.build === 'glass_factory' && state.res.quartz >= 1) { state.res.quartz--; state.res.glass += mult; }
                 if(c.build === 'plastic_factory' && state.res.oil >= 1) { state.res.oil--; state.res.plastic += mult; }
@@ -214,11 +235,12 @@
                 if(c.build === 'battery_factory' && state.res.iron >= 2 && state.res.copper >= 1 && state.res.cable >= 1) { state.res.iron-=2; state.res.copper--; state.res.cable--; state.res.battery += mult; }
                 if(c.build === 'robot_factory' && state.res.motor >= 3 && state.res.cable >= 5 && state.res.plastic >= 2) { state.res.motor-=3; state.res.cable-=5; state.res.plastic-=2; state.res.robot += mult; }
                 if(c.build === 'rocket_factory' && state.res.battery >= 3 && state.res.motor >= 3 && state.res.robot >= 2) { state.res.battery-=3; state.res.motor-=3; state.res.robot-=2; state.res.rocket += mult; }
-            });
-        }
+            }
+        });
 
+        // UI
         const resDiv = document.getElementById('res-display');
-        resDiv.innerHTML = Object.entries(state.res).map(([k,v]) => `<span>${k.slice(0,3)}:${Math.floor(v)}</span>`).join('');
+        resDiv.innerHTML = Object.entries(state.res).map(([k,v]) => `<div class="res-item">${k.toUpperCase().slice(0,3)}: ${Math.floor(v)}</div>`).join('');
         document.getElementById('power-fill').style.width = (state.maxEnergy > 0 ? (state.energy/state.maxEnergy)*100 : 0) + '%';
         document.getElementById('power-text').innerText = `STOCK: ${Math.floor(state.energy)}/${state.maxEnergy} | CONS: ${cons}W`;
         updateTierUI();
