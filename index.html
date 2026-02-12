@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Factory Planet - Loyal Version</title>
+    <title>Factory Planet - Production Stats</title>
     <style>
         :root { 
             --bg: #0f0f0f; --panel: #1a1a1a; --accent: #ff9800; 
@@ -16,7 +16,9 @@
         #right-panel { width: 180px; background: var(--panel); border-left: 1px solid #333; padding: 10px; overflow-y: auto; flex-shrink: 0; }
         #hud { background: rgba(0,0,0,0.9); padding: 10px; border-bottom: 1px solid #333; }
         .res-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; font-size: 10px; margin-bottom: 8px; }
-        .res-item { background: #222; padding: 2px 4px; border-radius: 2px; border: 1px solid #333; }
+        .res-item { background: #222; padding: 2px 4px; border-radius: 2px; border: 1px solid #333; display: flex; justify-content: space-between; }
+        .prod-stat { font-size: 8px; font-weight: bold; margin-left: 4px; }
+        .plus { color: #4caf50; } .minus { color: #f44336; }
         #power-container { background: #000; border: 1px solid #333; height: 18px; position: relative; border-radius: 4px; }
         #power-fill { background: var(--energy); height: 100%; width: 0%; transition: width 0.3s; }
         #power-text { position: absolute; width: 100%; text-align: center; font-size: 10px; top: 2px; font-weight: bold; color: white; text-shadow: 1px 1px black; }
@@ -62,7 +64,7 @@
         <div class="res-grid" id="res-display"></div>
         <div id="power-container">
             <div id="power-fill"></div>
-            <div id="power-text">STOCK: 0 / 0 | PROD: 0W</div>
+            <div id="power-text">STOCK: 0 / 0 | CONS: 0W | PROD: 0W</div>
         </div>
         <div id="time-display" style="font-size: 11px; text-align: center; margin-top: 5px;">☀️ JOUR</div>
     </div>
@@ -91,9 +93,7 @@
         solar: { iron: 40, copper: 20 }, battery_block: { iron: 50, battery: 20 },
         miner: { iron: 50 }, glass_factory: { iron: 80, quartz: 40 }, plastic_factory: { iron: 100 },
         cable_factory: { iron: 60, copper: 40 }, motor_factory: { iron: 120, copper: 60 },
-        battery_factory: { iron: 150, copper: 50 }, 
-        robot_factory: { motor: 10 }, // Coût de pose (pas recette)
-        rocket_factory: { iron: 500 }
+        battery_factory: { iron: 150, copper: 50 }, robot_factory: { motor: 10 }, rocket_factory: { iron: 500 }
     };
 
     let gridData = [];
@@ -167,7 +167,7 @@
         document.getElementById('time-display').innerText = isNight ? '🌙 NUIT' : '☀️ JOUR';
 
         let prod = gridData.filter(c => c.build === 'solar').length * (isNight ? 2 : 15);
-        state.maxEnergy = gridData.filter(c => c.build === 'battery_block').length * 10; // CAPACITÉ 10 RESPECTÉE
+        state.maxEnergy = gridData.filter(c => c.build === 'battery_block').length * 10;
         
         let cons = 0;
         gridData.forEach(c => {
@@ -180,6 +180,8 @@
         let hasPower = (prod - cons >= 0 || state.energy > 0);
 
         const mult = {1:1, 2:1.5, 3:2.5, 4:5}[state.tier];
+        let diff = { iron: 0, copper: 0, quartz: 0, oil: 0, glass: 0, plastic: 0, cable: 0, motor: 0, battery: 0, robot: 0, rocket: 0 };
+
         gridData.forEach((c, idx) => {
             const el = document.getElementById('c-' + idx);
             const isDead = Date.now() < c.deadUntil;
@@ -188,22 +190,26 @@
             el.innerHTML = c.build ? icons[c.build] : (isDead ? '🔥' : '');
 
             if(c.build && !isDead && hasPower) {
-                if(c.build === 'miner') state.res[c.type] += mult;
-                if(c.build === 'glass_factory' && state.res.quartz >= 1) { state.res.quartz--; state.res.glass += mult; }
-                if(c.build === 'plastic_factory' && state.res.oil >= 1) { state.res.oil--; state.res.plastic += mult; }
-                if(c.build === 'motor_factory' && state.res.iron >= 1 && state.res.copper >= 1) { state.res.iron--; state.res.copper--; state.res.motor += mult; }
-                if(c.build === 'cable_factory' && state.res.copper >= 1) { state.res.copper--; state.res.cable += mult; }
-                if(c.build === 'battery_factory' && state.res.iron >= 2 && state.res.copper >= 1 && state.res.cable >= 1) { state.res.iron-=2; state.res.copper--; state.res.cable--; state.res.battery += mult; }
-                // RECETTE ROBOT SANS FER + PLASTIQUE
-                if(c.build === 'robot_factory' && state.res.motor >= 3 && state.res.cable >= 5 && state.res.plastic >= 2) { state.res.motor-=3; state.res.cable-=5; state.res.plastic-=2; state.res.robot += mult; }
-                if(c.build === 'rocket_factory' && state.res.battery >= 3 && state.res.motor >= 3 && state.res.robot >= 2) { state.res.battery-=3; state.res.motor-=3; state.res.robot-=2; state.res.rocket += mult; }
+                if(c.build === 'miner') { state.res[c.type] += mult; diff[c.type] += mult; }
+                if(c.build === 'glass_factory' && state.res.quartz >= 1) { state.res.quartz--; diff.quartz--; state.res.glass += mult; diff.glass += mult; }
+                if(c.build === 'plastic_factory' && state.res.oil >= 1) { state.res.oil--; diff.oil--; state.res.plastic += mult; diff.plastic += mult; }
+                if(c.build === 'motor_factory' && state.res.iron >= 1 && state.res.copper >= 1) { state.res.iron--; state.res.copper--; diff.iron--; diff.copper--; state.res.motor += mult; diff.motor += mult; }
+                if(c.build === 'cable_factory' && state.res.copper >= 1) { state.res.copper--; diff.copper--; state.res.cable += mult; diff.cable += mult; }
+                if(c.build === 'battery_factory' && state.res.iron >= 2 && state.res.copper >= 1 && state.res.cable >= 1) { state.res.iron-=2; state.res.copper--; state.res.cable--; diff.iron-=2; diff.copper--; diff.cable--; state.res.battery += mult; diff.battery += mult; }
+                if(c.build === 'robot_factory' && state.res.motor >= 3 && state.res.cable >= 5 && state.res.plastic >= 2) { state.res.motor-=3; state.res.cable-=5; state.res.plastic-=2; diff.motor-=3; diff.cable-=5; diff.plastic-=2; state.res.robot += mult; diff.robot += mult; }
+                if(c.build === 'rocket_factory' && state.res.battery >= 3 && state.res.motor >= 3 && state.res.robot >= 2) { state.res.battery-=3; state.res.motor-=3; state.res.robot-=2; diff.battery-=3; diff.motor-=3; diff.robot-=2; state.res.rocket += mult; diff.rocket += mult; }
             }
         });
 
         const resDiv = document.getElementById('res-display');
-        resDiv.innerHTML = Object.entries(state.res).map(([k,v]) => `<div class="res-item">${k.toUpperCase().slice(0,3)}: ${Math.floor(v)}</div>`).join('');
+        resDiv.innerHTML = Object.entries(state.res).map(([k,v]) => {
+            let d = diff[k];
+            let dText = d >= 0 ? `<span class="prod-stat plus">+${d}</span>` : `<span class="prod-stat minus">${d}</span>`;
+            return `<div class="res-item"><span>${k.toUpperCase().slice(0,3)}: ${Math.floor(v)}</span>${dText}</div>`;
+        }).join('');
+        
         document.getElementById('power-fill').style.width = (state.maxEnergy > 0 ? (state.energy/state.maxEnergy)*100 : 0) + '%';
-        document.getElementById('power-text').innerText = `STOCK: ${Math.floor(state.energy)}/${state.maxEnergy} | CONS: ${cons}W`;
+        document.getElementById('power-text').innerText = `STOCK: ${Math.floor(state.energy)}/${state.maxEnergy} | CONS: ${cons}W | PROD: ${prod}W`;
         updateTierUI();
     }, 1000);
 
