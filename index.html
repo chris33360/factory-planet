@@ -3,59 +3,63 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Factory Planet - Oil & Recycle</title>
+    <title>Factory Planet - Day/Night Cycle</title>
     <style>
         :root { 
             --bg: #121212; --panel: #1e1e1e; --accent: #ff9800; 
             --iron: #424242; --copper: #6d2d1a; --quartz: #006064; --oil: #000000;
             --power: #4caf50; --danger: #f44336; 
         }
-        body { font-family: 'Consolas', monospace; background: var(--bg); color: white; margin: 0; overflow: hidden; touch-action: none; }
+        body { font-family: 'Consolas', monospace; background: var(--bg); color: white; margin: 0; overflow: hidden; touch-action: none; transition: background 2s; }
         
         /* HUD */
-        #hud { position: fixed; top: 0; width: 100%; background: var(--panel); z-index: 100; padding: 10px; border-bottom: 2px solid #333; box-sizing: border-box; display: grid; grid-template-columns: 1fr 1fr; }
-        .res-grid { font-size: 11px; line-height: 1.4; }
-        .res-item span { font-weight: bold; }
+        #hud { position: fixed; top: 0; width: 100%; background: var(--panel); z-index: 100; padding: 10px; border-bottom: 2px solid #333; box-sizing: border-box; display: grid; grid-template-columns: 1.2fr 0.8fr; }
+        .res-grid { font-size: 11px; line-height: 1.5; }
+        .flux { font-size: 9px; margin-left: 4px; font-weight: bold; }
+        .gain { color: #4caf50; }
+        .loss { color: #f44336; }
         
         #power-display { font-size: 12px; font-weight: bold; padding: 4px 8px; border-radius: 4px; background: #080808; display: inline-block; margin-top: 5px; border: 1px solid #333; }
         .p-normal { color: var(--power); }
         .p-alert { color: var(--danger); animation: blink 1s infinite; }
         @keyframes blink { 50% { opacity: 0.5; } }
 
-        /* VIEWPORT */
-        #viewport { width: 100vw; height: 100vh; overflow: hidden; background: #0a0a0a; display: flex; align-items: center; justify-content: center; }
-        #grid { display: grid; grid-template-columns: repeat(20, 50px); grid-template-rows: repeat(20, 50px); gap: 2px; }
+        /* Indicateur Cycle */
+        #cycle-info { font-size: 14px; font-weight: bold; margin-bottom: 5px; display: flex; align-items: center; gap: 5px; }
+        .night-mode { background: #0a0a1a !important; }
+        .night-grid { filter: brightness(0.5); }
 
-        .cell { width: 50px; height: 50px; background: #1a1a1a; border: 1px solid #252525; display: flex; align-items: center; justify-content: center; font-size: 22px; transition: background 0.2s; }
+        #viewport { width: 100vw; height: 100vh; overflow: hidden; display: flex; align-items: center; justify-content: center; }
+        #grid { display: grid; grid-template-columns: repeat(20, 50px); grid-template-rows: repeat(20, 50px); gap: 2px; transition: filter 2s; }
+
+        .cell { width: 50px; height: 50px; background: #1a1a1a; border: 1px solid #252525; display: flex; align-items: center; justify-content: center; font-size: 22px; position: relative; }
         .cell.iron { background-color: var(--iron); }
         .cell.copper { background-color: var(--copper); }
         .cell.quartz { background-color: var(--quartz); }
         .cell.oil { background-color: var(--oil); border: 1px solid #333; }
-        .cell.occupied { filter: brightness(1.3); }
         
-        /* BARRE DE CONSTRUCTION */
+        .no-fuel-icon { position: absolute; font-size: 14px; top: 2px; right: 2px; animation: blink 0.5s infinite; color: var(--danger); }
+
         #controls { position: fixed; bottom: 0; width: 100%; background: var(--panel); padding: 10px; display: flex; gap: 8px; overflow-x: auto; border-top: 2px solid #333; z-index: 100; }
         button { background: #333; color: white; border: 1px solid #555; padding: 8px; border-radius: 4px; font-size: 10px; min-width: 85px; text-align: center; }
         button.active { border-color: var(--accent); background: #443311; }
         button.recycle-mode { border-color: var(--danger); background: #331111; }
-        #upgrade-btn { border-color: var(--accent); }
     </style>
 </head>
 <body>
 
 <div id="hud">
     <div class="res-grid">
-        <div style="color:#bbb">Fer: <span id="res-iron">0</span></div>
-        <div style="color:#ff7043">Cuivre: <span id="res-copper">0</span></div>
-        <div style="color:#26c6da">Quartz: <span id="res-quartz">0</span></div>
-        <div style="color:#fff">Pétrole: <span id="res-oil">0</span></div>
-        <div id="power-display" class="p-normal">
-            ⚡ <span id="p-cons">0</span>W / <span id="p-prod">0</span>W
-        </div>
+        <div id="cycle-info">☀️ Jour</div>
+        <div style="color:#bbb">Fer: <span id="res-iron">0</span> <span id="flux-iron" class="flux"></span></div>
+        <div style="color:#ff7043">Cuivre: <span id="res-copper">0</span> <span id="flux-copper" class="flux"></span></div>
+        <div style="color:#26c6da">Quartz: <span id="res-quartz">0</span> <span id="flux-quartz" class="flux"></span></div>
+        <div style="color:#fff">Pétrole: <span id="res-oil">0</span> <span id="flux-oil" class="flux"></span></div>
+        <div id="power-display" class="p-normal">⚡ <span id="p-cons">0</span>W / <span id="p-prod">0</span>W</div>
     </div>
     <div style="text-align: right;">
         <div id="tier-display" style="color:var(--accent); font-size:12px; margin-bottom:4px;">TIER 1</div>
-        <button id="upgrade-btn" onclick="upgradeTier()">Chargement...</button>
+        <button id="upgrade-btn" onclick="upgradeTier()" style="width:100%">UPGRADE</button>
     </div>
 </div>
 
@@ -66,27 +70,25 @@
 <div id="controls">
     <button id="btn-miner" onclick="setMode('miner')">⛏️ Mineur<br>50 Fe</button>
     <button id="btn-solar" onclick="setMode('solar')">☀️ Solaire<br>40 Fe, 20 Cu</button>
-    <button id="btn-fuel" onclick="setMode('fuel')">🚀 Générateur<br>150 Fe, 80 Cu</button>
-    <button id="btn-recycle" onclick="setMode('recycle')" style="color:var(--danger)">♻️ Recycler<br>(Refund 80%)</button>
+    <button id="btn-fuel" onclick="setMode('fuel')">⚡ Générateur<br>150 Fe, 80 Cu</button>
+    <button id="btn-recycle" onclick="setMode('recycle')" style="color:var(--danger)">♻️ Recycler</button>
 </div>
 
 <script>
     let state = {
         res: { iron: 150, copper: 80, quartz: 0, oil: 0 },
-        tier: 1, mode: null, offset: { x: 0, y: 0 }
+        tier: 1, mode: null, offset: { x: 0, y: 0 },
+        time: 0 // Temps en secondes
     };
 
     let gridData = [];
     const GRID_SIZE = 20;
-    const COSTS = {
-        miner: { iron: 50, copper: 0 },
-        solar: { iron: 40, copper: 20 },
-        fuel: { iron: 150, copper: 80 }
-    };
+    const CYCLE_DURATION = 60; // 30s jour / 30s nuit
+    const COSTS = { miner: { iron: 50, copper: 0 }, solar: { iron: 40, copper: 20 }, fuel: { iron: 150, copper: 80 } };
 
-    function saveGame() { localStorage.setItem('factorySave_v3', JSON.stringify({ state, gridData })); }
+    function saveGame() { localStorage.setItem('factorySave_v6', JSON.stringify({ state, gridData })); }
     function loadGame() {
-        const saved = localStorage.getItem('factorySave_v3');
+        const saved = localStorage.getItem('factorySave_v6');
         if (saved) { const p = JSON.parse(saved); state = p.state; gridData = p.gridData; return true; }
         return false;
     }
@@ -97,10 +99,7 @@
             for (let i = 0; i < GRID_SIZE * GRID_SIZE; i++) {
                 let r = Math.random();
                 let type = 'empty';
-                if (r > 0.98) type = 'oil';
-                else if (r > 0.96) type = 'quartz';
-                else if (r > 0.91) type = 'copper';
-                else if (r > 0.83) type = 'iron';
+                if (r > 0.98) type = 'oil'; else if (r > 0.96) type = 'quartz'; else if (r > 0.91) type = 'copper'; else if (r > 0.83) type = 'iron';
                 gridData.push({ id: i, type: type, build: null, stock: 5000 });
             }
         }
@@ -126,40 +125,27 @@
 
     function handleCellClick(i) {
         let cell = gridData[i];
-        
-        // DÉCONSTRUCTION
         if (state.mode === 'recycle' && cell.build) {
-            let type = cell.build;
-            state.res.iron += Math.floor(COSTS[type].iron * 0.8);
-            state.res.copper += Math.floor(COSTS[type].copper * 0.8);
-            cell.build = null;
-            updateCellUI(i);
-            saveGame();
-            return;
+            state.res.iron += Math.floor(COSTS[cell.build].iron * 0.8);
+            state.res.copper += Math.floor(COSTS[cell.build].copper * 0.8);
+            cell.build = null; updateCellUI(i); saveGame(); return;
         }
-
-        // CONSTRUCTION
-        if (cell.build) return;
+        if (cell.build || !state.mode) return;
         let cost = COSTS[state.mode];
         if (cost && state.res.iron >= cost.iron && state.res.copper >= cost.copper) {
             if (state.mode === 'miner' && cell.type === 'empty') return;
-            state.res.iron -= cost.iron;
-            state.res.copper -= cost.copper;
-            cell.build = state.mode;
-            updateCellUI(i);
-            saveGame();
+            state.res.iron -= cost.iron; state.res.copper -= cost.copper;
+            cell.build = state.mode; updateCellUI(i); saveGame();
         }
     }
 
-    function updateCellUI(i) {
+    function updateCellUI(i, hasFuel = true) {
         let c = gridData[i], el = document.getElementById('c-' + i);
         if (c.build) {
+            const icons = { miner: '⛏️', solar: '☀️', fuel: '⚡' };
+            el.innerHTML = icons[c.build] + (c.build === 'fuel' && !hasFuel ? '<span class="no-fuel-icon">⚠️</span>' : '');
             el.classList.add('occupied');
-            const icons = { miner: '⛏️', solar: '☀️', fuel: '🚀' };
-            el.innerHTML = icons[c.build];
-        } else {
-            el.innerHTML = ""; el.classList.remove('occupied');
-        }
+        } else { el.innerHTML = ""; el.classList.remove('occupied'); }
     }
 
     function upgradeTier() {
@@ -171,24 +157,54 @@
     }
 
     setInterval(() => {
+        state.time = (state.time + 1) % CYCLE_DURATION;
+        const isNight = state.time >= (CYCLE_DURATION / 2);
+        
+        // UI Cycle Update
+        document.body.className = isNight ? 'night-mode' : '';
+        document.getElementById('grid').className = isNight ? 'night-grid' : '';
+        document.getElementById('cycle-info').innerHTML = isNight ? '🌙 Nuit' : '☀️ Jour';
+        document.getElementById('cycle-info').style.color = isNight ? '#9fa8da' : '#ffeb3b';
+
         let miners = gridData.filter(c => c.build === 'miner');
-        let prodW = (gridData.filter(c => c.build === 'solar').length * 15 * state.tier) + 
-                    (gridData.filter(c => c.build === 'fuel').length * 30 * state.tier);
+        
+        // Solaire : -70% de prod la nuit
+        let solarEfficiency = isNight ? 0.3 : 1.0;
+        let solarProd = gridData.filter(c => c.build === 'solar').length * (15 * state.tier * solarEfficiency);
+        
+        let fuelGens = gridData.filter(c => c.build === 'fuel');
+        let fuelProd = 0;
+        let oilCons = 0;
+
+        fuelGens.forEach((g) => {
+            let cellIdx = gridData.indexOf(g);
+            if (state.res.oil >= 1) {
+                state.res.oil -= 1; oilCons++; fuelProd += 30 * state.tier;
+                updateCellUI(cellIdx, true);
+            } else { updateCellUI(cellIdx, false); }
+        });
+
+        let prodW = solarProd + fuelProd;
         let consW = miners.length * 8;
         let eff = prodW >= consW ? 1 : (prodW / (consW || 1));
-
+        
+        let gains = { iron: 0, copper: 0, quartz: 0, oil: 0 };
         miners.forEach(m => {
             if (m.stock > 0) {
                 let qty = (1 * state.tier) * eff;
-                state.res[m.type] += qty;
-                m.stock -= qty;
+                state.res[m.type] += qty; m.stock -= qty;
+                gains[m.type] += qty;
             }
         });
 
-        document.getElementById('res-iron').innerText = Math.floor(state.res.iron);
-        document.getElementById('res-copper').innerText = Math.floor(state.res.copper);
-        document.getElementById('res-quartz').innerText = Math.floor(state.res.quartz);
-        document.getElementById('res-oil').innerText = Math.floor(state.res.oil);
+        ['iron', 'copper', 'quartz', 'oil'].forEach(r => {
+            document.getElementById(`res-${r}`).innerText = Math.floor(state.res[r]);
+            let fluxEl = document.getElementById(`flux-${r}`);
+            let net = gains[r] - (r === 'oil' ? oilCons : 0);
+            fluxEl.innerText = (net >= 0 ? "+" : "") + net.toFixed(1) + "/s";
+            fluxEl.className = "flux " + (net >= 0 ? "gain" : "loss");
+        });
+
         document.getElementById('p-cons').innerText = Math.round(consW);
         document.getElementById('p-prod').innerText = Math.round(prodW);
         document.getElementById('power-display').className = eff < 1 ? 'p-alert' : 'p-normal';
@@ -199,15 +215,13 @@
         document.getElementById('tier-display').innerText = "TIER " + state.tier;
     }, 1000);
 
-    // DRAG
     let isDragging = false, lastMouse = { x: 0, y: 0 };
     const vp = document.getElementById('viewport'), gd = document.getElementById('grid');
     vp.onpointerdown = (e) => { isDragging = true; lastMouse = { x: e.clientX, y: e.clientY }; };
     window.onpointerup = () => { isDragging = false; saveGame(); };
     window.onpointermove = (e) => {
         if (!isDragging) return;
-        state.offset.x += e.clientX - lastMouse.x;
-        state.offset.y += e.clientY - lastMouse.y;
+        state.offset.x += e.clientX - lastMouse.x; state.offset.y += e.clientY - lastMouse.y;
         gd.style.transform = `translate(${state.offset.x}px, ${state.offset.y}px)`;
         lastMouse = { x: e.clientX, y: e.clientY };
     };
