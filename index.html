@@ -3,52 +3,59 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Factory Planet - Pro Power</title>
+    <title>Factory Planet - Oil & Recycle</title>
     <style>
-        :root { --bg: #121212; --panel: #1e1e1e; --accent: #ff9800; --iron: #9e9e9e; --copper: #d84315; --quartz: #00e5ff; --power: #4caf50; --danger: #f44336; }
+        :root { 
+            --bg: #121212; --panel: #1e1e1e; --accent: #ff9800; 
+            --iron: #424242; --copper: #6d2d1a; --quartz: #006064; --oil: #000000;
+            --power: #4caf50; --danger: #f44336; 
+        }
         body { font-family: 'Consolas', monospace; background: var(--bg); color: white; margin: 0; overflow: hidden; touch-action: none; }
         
-        /* HUD AMÉLIORÉ */
+        /* HUD */
         #hud { position: fixed; top: 0; width: 100%; background: var(--panel); z-index: 100; padding: 10px; border-bottom: 2px solid #333; box-sizing: border-box; display: grid; grid-template-columns: 1fr 1fr; }
-        .res-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; font-size: 11px; }
-        .res-item { display: flex; align-items: center; gap: 4px; }
+        .res-grid { font-size: 11px; line-height: 1.4; }
+        .res-item span { font-weight: bold; }
         
-        /* AFFICHAGE ÉLECTRIQUE CHIFFRÉ */
-        #power-display { font-size: 13px; font-weight: bold; padding: 5px; border-radius: 4px; background: #000; display: inline-block; margin-top: 5px; }
+        #power-display { font-size: 12px; font-weight: bold; padding: 4px 8px; border-radius: 4px; background: #080808; display: inline-block; margin-top: 5px; border: 1px solid #333; }
         .p-normal { color: var(--power); }
         .p-alert { color: var(--danger); animation: blink 1s infinite; }
         @keyframes blink { 50% { opacity: 0.5; } }
 
+        /* VIEWPORT */
         #viewport { width: 100vw; height: 100vh; overflow: hidden; background: #0a0a0a; display: flex; align-items: center; justify-content: center; }
-        #grid { display: grid; grid-template-columns: repeat(20, 45px); grid-template-rows: repeat(20, 45px); gap: 2px; }
+        #grid { display: grid; grid-template-columns: repeat(20, 50px); grid-template-rows: repeat(20, 50px); gap: 2px; }
 
-        .cell { width: 45px; height: 45px; background: #1a1a1a; border: 1px solid #252525; display: flex; align-items: center; justify-content: center; font-size: 18px; }
-        .cell.iron { border-bottom: 3px solid var(--iron); }
-        .cell.copper { border-bottom: 3px solid var(--copper); }
-        .cell.quartz { border-bottom: 3px solid var(--quartz); }
-        .cell.occupied { background: #333; }
+        .cell { width: 50px; height: 50px; background: #1a1a1a; border: 1px solid #252525; display: flex; align-items: center; justify-content: center; font-size: 22px; transition: background 0.2s; }
+        .cell.iron { background-color: var(--iron); }
+        .cell.copper { background-color: var(--copper); }
+        .cell.quartz { background-color: var(--quartz); }
+        .cell.oil { background-color: var(--oil); border: 1px solid #333; }
+        .cell.occupied { filter: brightness(1.3); }
         
-        #controls { position: fixed; bottom: 0; width: 100%; background: var(--panel); padding: 12px; display: flex; gap: 8px; overflow-x: auto; border-top: 2px solid #333; z-index: 100; }
-        button { background: #333; color: white; border: 1px solid #555; padding: 10px; border-radius: 4px; font-size: 11px; min-width: 80px; }
+        /* BARRE DE CONSTRUCTION */
+        #controls { position: fixed; bottom: 0; width: 100%; background: var(--panel); padding: 10px; display: flex; gap: 8px; overflow-x: auto; border-top: 2px solid #333; z-index: 100; }
+        button { background: #333; color: white; border: 1px solid #555; padding: 8px; border-radius: 4px; font-size: 10px; min-width: 85px; text-align: center; }
         button.active { border-color: var(--accent); background: #443311; }
-        #upgrade-btn { font-size: 10px; background: #222; border-color: var(--accent); }
+        button.recycle-mode { border-color: var(--danger); background: #331111; }
+        #upgrade-btn { border-color: var(--accent); }
     </style>
 </head>
 <body>
 
 <div id="hud">
     <div class="res-grid">
-        <div class="res-item" style="color:var(--iron)">Fe: <span id="res-iron">0</span></div>
-        <div class="res-item" style="color:var(--copper)">Cu: <span id="res-copper">0</span></div>
-        <div class="res-item" style="color:var(--quartz)">Qz: <span id="res-quartz">0</span></div>
+        <div style="color:#bbb">Fer: <span id="res-iron">0</span></div>
+        <div style="color:#ff7043">Cuivre: <span id="res-copper">0</span></div>
+        <div style="color:#26c6da">Quartz: <span id="res-quartz">0</span></div>
+        <div style="color:#fff">Pétrole: <span id="res-oil">0</span></div>
         <div id="power-display" class="p-normal">
             ⚡ <span id="p-cons">0</span>W / <span id="p-prod">0</span>W
         </div>
     </div>
     <div style="text-align: right;">
-        <div id="tier-display" style="color:var(--accent); font-size:12px; margin-bottom:5px;">TIER 1</div>
-        <button id="upgrade-btn" onclick="upgradeTier()">Upgrade</button>
-        <button onclick="resetGame()" style="font-size:8px; padding:2px; min-width:40px; margin-top:5px; border:none; background:none; color:#555;">Reset</button>
+        <div id="tier-display" style="color:var(--accent); font-size:12px; margin-bottom:4px;">TIER 1</div>
+        <button id="upgrade-btn" onclick="upgradeTier()">Chargement...</button>
     </div>
 </div>
 
@@ -57,60 +64,46 @@
 </div>
 
 <div id="controls">
-    <button id="btn-miner" onclick="setMode('miner')">⛏️ Mineur<br>(50 Fe)</button>
-    <button id="btn-solar" onclick="setMode('solar')">☀️ Solaire<br>(40 Fe, 20 Cu)</button>
-    <button id="btn-battery" onclick="setMode('battery')">🔋 Bat<br>(100 Fe)</button>
+    <button id="btn-miner" onclick="setMode('miner')">⛏️ Mineur<br>50 Fe</button>
+    <button id="btn-solar" onclick="setMode('solar')">☀️ Solaire<br>40 Fe, 20 Cu</button>
+    <button id="btn-fuel" onclick="setMode('fuel')">🚀 Générateur<br>150 Fe, 80 Cu</button>
+    <button id="btn-recycle" onclick="setMode('recycle')" style="color:var(--danger)">♻️ Recycler<br>(Refund 80%)</button>
 </div>
 
 <script>
     let state = {
-        res: { iron: 100, copper: 50, quartz: 0 },
+        res: { iron: 150, copper: 80, quartz: 0, oil: 0 },
         tier: 1, mode: null, offset: { x: 0, y: 0 }
     };
 
     let gridData = [];
     const GRID_SIZE = 20;
+    const COSTS = {
+        miner: { iron: 50, copper: 0 },
+        solar: { iron: 40, copper: 20 },
+        fuel: { iron: 150, copper: 80 }
+    };
 
-    // --- LOGIQUE DE SAUVEGARDE ---
-    function saveGame() {
-        const saveData = { state, gridData };
-        localStorage.setItem('factorySave_v1', JSON.stringify(saveData));
-    }
-
+    function saveGame() { localStorage.setItem('factorySave_v3', JSON.stringify({ state, gridData })); }
     function loadGame() {
-        const saved = localStorage.getItem('factorySave_v1');
-        if (saved) {
-            const parsed = JSON.parse(saved);
-            state = parsed.state;
-            gridData = parsed.gridData;
-            return true;
-        }
+        const saved = localStorage.getItem('factorySave_v3');
+        if (saved) { const p = JSON.parse(saved); state = p.state; gridData = p.gridData; return true; }
         return false;
     }
 
-    function resetGame() {
-        if(confirm("Réinitialiser toute la planète ?")) {
-            localStorage.removeItem('factorySave_v1');
-            location.reload();
-        }
-    }
-
-    // --- INITIALISATION ---
     function init() {
         const gridEl = document.getElementById('grid');
-        const hasSave = loadGame();
-
-        if (!hasSave) {
+        if (!loadGame()) {
             for (let i = 0; i < GRID_SIZE * GRID_SIZE; i++) {
                 let r = Math.random();
                 let type = 'empty';
-                if (r > 0.97) type = 'quartz';
-                else if (r > 0.92) type = 'copper';
-                else if (r > 0.85) type = 'iron';
-                gridData.push({ id: i, type: type, build: null, stock: 2000 });
+                if (r > 0.98) type = 'oil';
+                else if (r > 0.96) type = 'quartz';
+                else if (r > 0.91) type = 'copper';
+                else if (r > 0.83) type = 'iron';
+                gridData.push({ id: i, type: type, build: null, stock: 5000 });
             }
         }
-
         gridData.forEach((c, i) => {
             let cell = document.createElement('div');
             cell.className = `cell ${c.type}`;
@@ -119,105 +112,105 @@
             gridEl.appendChild(cell);
             updateCellUI(i);
         });
-        
-        document.getElementById('tier-display').innerText = "TIER " + state.tier;
+        gridEl.style.transform = `translate(${state.offset.x}px, ${state.offset.y}px)`;
     }
 
     function setMode(m) {
         state.mode = (state.mode === m) ? null : m;
-        document.querySelectorAll('#controls button').forEach(b => b.classList.remove('active'));
-        if(state.mode) document.getElementById('btn-' + m).classList.add('active');
+        document.querySelectorAll('#controls button').forEach(b => b.classList.remove('active', 'recycle-mode'));
+        if(state.mode) {
+            let btn = document.getElementById('btn-' + m);
+            btn.classList.add(m === 'recycle' ? 'recycle-mode' : 'active');
+        }
     }
 
     function handleCellClick(i) {
         let cell = gridData[i];
+        
+        // DÉCONSTRUCTION
+        if (state.mode === 'recycle' && cell.build) {
+            let type = cell.build;
+            state.res.iron += Math.floor(COSTS[type].iron * 0.8);
+            state.res.copper += Math.floor(COSTS[type].copper * 0.8);
+            cell.build = null;
+            updateCellUI(i);
+            saveGame();
+            return;
+        }
+
+        // CONSTRUCTION
         if (cell.build) return;
-
-        if (state.mode === 'miner' && state.res.iron >= 50 && cell.type !== 'empty') {
-            state.res.iron -= 50; cell.build = 'miner';
-        } else if (state.mode === 'solar' && state.res.iron >= 40 && state.res.copper >= 20) {
-            state.res.iron -= 40; state.res.copper -= 20; cell.build = 'solar';
-        }
-        updateCellUI(i);
-        saveGame();
-    }
-
-    function updateCellUI(i) {
-        let c = gridData[i];
-        let el = document.getElementById('c-' + i);
-        if (c.build) {
-            el.classList.add('occupied');
-            el.innerHTML = c.build === 'miner' ? '⛏️' : (c.build === 'solar' ? '☀️' : '🔋');
-        } else {
-            el.innerHTML = "";
-            el.classList.remove('occupied');
-        }
-    }
-
-    function upgradeTier() {
-        let cost = state.tier * 500;
-        if (state.res.iron >= cost && state.res.copper >= cost / 2 && state.res.quartz >= cost / 5) {
-            state.res.iron -= cost; state.res.copper -= cost / 2; state.res.quartz -= cost / 5;
-            state.tier++;
-            document.getElementById('tier-display').innerText = "TIER " + state.tier;
+        let cost = COSTS[state.mode];
+        if (cost && state.res.iron >= cost.iron && state.res.copper >= cost.copper) {
+            if (state.mode === 'miner' && cell.type === 'empty') return;
+            state.res.iron -= cost.iron;
+            state.res.copper -= cost.copper;
+            cell.build = state.mode;
+            updateCellUI(i);
             saveGame();
         }
     }
 
-    // --- BOUCLE DE JEU ---
+    function updateCellUI(i) {
+        let c = gridData[i], el = document.getElementById('c-' + i);
+        if (c.build) {
+            el.classList.add('occupied');
+            const icons = { miner: '⛏️', solar: '☀️', fuel: '🚀' };
+            el.innerHTML = icons[c.build];
+        } else {
+            el.innerHTML = ""; el.classList.remove('occupied');
+        }
+    }
+
+    function upgradeTier() {
+        let cost = state.tier * 800;
+        if (state.res.iron >= cost && state.res.copper >= cost / 2) {
+            state.res.iron -= cost; state.res.copper -= cost / 2;
+            state.tier++; saveGame();
+        }
+    }
+
     setInterval(() => {
         let miners = gridData.filter(c => c.build === 'miner');
-        let prodW = gridData.filter(c => c.build === 'solar').length * (10 * state.tier);
-        let consW = miners.length * 5;
-        let efficiency = prodW >= consW ? 1 : (prodW / (consW || 1));
+        let prodW = (gridData.filter(c => c.build === 'solar').length * 15 * state.tier) + 
+                    (gridData.filter(c => c.build === 'fuel').length * 30 * state.tier);
+        let consW = miners.length * 8;
+        let eff = prodW >= consW ? 1 : (prodW / (consW || 1));
 
         miners.forEach(m => {
             if (m.stock > 0) {
-                let qty = (0.5 * state.tier) * efficiency;
+                let qty = (1 * state.tier) * eff;
                 state.res[m.type] += qty;
                 m.stock -= qty;
             }
         });
 
-        // Mise à jour HUD
         document.getElementById('res-iron').innerText = Math.floor(state.res.iron);
         document.getElementById('res-copper').innerText = Math.floor(state.res.copper);
         document.getElementById('res-quartz').innerText = Math.floor(state.res.quartz);
+        document.getElementById('res-oil').innerText = Math.floor(state.res.oil);
+        document.getElementById('p-cons').innerText = Math.round(consW);
+        document.getElementById('p-prod').innerText = Math.round(prodW);
+        document.getElementById('power-display').className = eff < 1 ? 'p-alert' : 'p-normal';
         
-        const pDisp = document.getElementById('power-display');
-        document.getElementById('p-cons').innerText = consW;
-        document.getElementById('p-prod').innerText = prodW;
-
-        if (efficiency < 1) {
-            pDisp.className = 'p-alert';
-        } else {
-            pDisp.className = 'p-normal';
-        }
-        
-        let upCost = state.tier * 500;
-        document.getElementById('upgrade-btn').innerText = `UP T${state.tier+1} (${upCost} Fe/Cu)`;
-        document.getElementById('upgrade-btn').disabled = state.res.iron < upCost;
+        let upC = state.tier * 800;
+        document.getElementById('upgrade-btn').innerHTML = `UP T${state.tier+1}<br>(${upC} Fe)`;
+        document.getElementById('upgrade-btn').disabled = state.res.iron < upC;
+        document.getElementById('tier-display').innerText = "TIER " + state.tier;
     }, 1000);
 
-    // Sauvegarde auto toutes les 10 sec
-    setInterval(saveGame, 10000);
-
-    // Navigation Drag
-    let isDragging = false;
-    let lastMouse = { x: 0, y: 0 };
-    const viewport = document.getElementById('viewport');
-    const grid = document.getElementById('grid');
-
-    viewport.onpointerdown = (e) => { isDragging = true; lastMouse = { x: e.clientX, y: e.clientY }; };
-    window.onpointerup = () => isDragging = false;
+    // DRAG
+    let isDragging = false, lastMouse = { x: 0, y: 0 };
+    const vp = document.getElementById('viewport'), gd = document.getElementById('grid');
+    vp.onpointerdown = (e) => { isDragging = true; lastMouse = { x: e.clientX, y: e.clientY }; };
+    window.onpointerup = () => { isDragging = false; saveGame(); };
     window.onpointermove = (e) => {
         if (!isDragging) return;
         state.offset.x += e.clientX - lastMouse.x;
         state.offset.y += e.clientY - lastMouse.y;
-        grid.style.transform = `translate(${state.offset.x}px, ${state.offset.y}px)`;
+        gd.style.transform = `translate(${state.offset.x}px, ${state.offset.y}px)`;
         lastMouse = { x: e.clientX, y: e.clientY };
     };
-
     init();
 </script>
 </body>
