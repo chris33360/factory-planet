@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Factory Planet - Layout Fix</title>
+    <title>Factory Planet - Wide Layout</title>
     <style>
         :root { 
             --bg: #0f0f0f; --panel: #1a1a1a; --accent: #ff9800; 
@@ -12,23 +12,26 @@
         }
         body { font-family: 'Segoe UI', Tahoma, sans-serif; background: var(--bg); color: white; margin: 0; overflow: hidden; touch-action: none; display: flex; }
         
-        /* HUD - Ajusté pour ne pas passer sous le Tech Tree */
+        /* HUD */
         #hud { position: fixed; top: 0; left: 0; width: calc(100% - 150px); background: rgba(26,26,26,0.95); z-index: 100; padding: 8px; border-bottom: 1px solid #333; box-sizing: border-box; }
-        .res-grid { font-size: 10px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
-        .res-item { display: flex; align-items: center; gap: 4px; }
+        .res-grid { font-size: 10px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; }
+        .res-item { display: flex; align-items: center; gap: 4px; white-space: nowrap; }
         .flux { font-size: 8px; opacity: 0.8; }
         .gain { color: var(--power); } .loss { color: var(--danger); }
         
-        /* ARBRE TECH (DROITE) - Fixe sur le côté */
+        /* TECH TREE (Design précédent restauré) */
         #tech-tree { width: 150px; height: 100vh; background: var(--panel); border-left: 1px solid #333; z-index: 101; padding: 10px; box-sizing: border-box; overflow-y: auto; flex-shrink: 0; }
-        .tech-item { background: #222; border: 1px solid #444; padding: 8px; border-radius: 4px; margin-bottom: 10px; font-size: 10px; opacity: 0.5; }
-        .tech-item.current { opacity: 1; border-color: var(--accent); }
+        .tech-item { background: #222; border: 1px solid #444; padding: 8px; border-radius: 4px; margin-bottom: 10px; font-size: 10px; opacity: 0.5; transition: 0.3s; }
+        .tech-item.current { opacity: 1; border-color: var(--accent); box-shadow: 0 0 5px rgba(255,152,0,0.3); }
         .tech-item.unlocked { opacity: 1; border-color: var(--power); background: #1b2e1b; }
         .tech-item h4 { margin: 0 0 5px 0; font-size: 11px; color: var(--accent); }
-        
-        /* GRILLE */
+        .tech-item p { margin: 0 0 5px 0; color: #bbb; line-height: 1.2; }
+        .tech-item button { width: 100%; background: var(--accent); color: black; border: none; padding: 4px; border-radius: 2px; font-weight: bold; cursor: pointer; font-size: 9px; }
+        .tech-item button:disabled { background: #444; color: #888; cursor: not-allowed; }
+
+        /* VIEWPORT ET GRILLE 45x22 */
         #viewport { flex-grow: 1; height: 100vh; overflow: hidden; display: flex; align-items: center; justify-content: center; background: #080808; position: relative; }
-        #grid { display: grid; grid-template-columns: repeat(30, 35px); grid-template-rows: repeat(30, 35px); gap: 1px; }
+        #grid { display: grid; grid-template-columns: repeat(45, 35px); grid-template-rows: repeat(22, 35px); gap: 1px; }
         .cell { width: 35px; height: 35px; background: #141414; border: 1px solid #1f1f1f; display: flex; align-items: center; justify-content: center; font-size: 16px; position: relative; }
         .cell.iron { background-color: var(--iron); }
         .cell.copper { background-color: var(--copper); }
@@ -36,7 +39,7 @@
         .cell.oil { background-color: var(--oil); }
         .status-icon { position: absolute; font-size: 10px; top: 0; right: 0; }
 
-        /* BARRE DE CONSTRUCTION - Ajustée pour ne pas passer sous le Tech Tree */
+        /* CONTROLES */
         #controls { position: fixed; bottom: 0; left: 0; width: calc(100% - 150px); background: var(--panel); padding: 10px; display: flex; gap: 8px; overflow-x: auto; border-top: 1px solid #333; z-index: 100; box-sizing: border-box; }
         button.build-btn { background: #2a2a2a; color: white; border: 1px solid #444; padding: 6px; border-radius: 4px; font-size: 10px; min-width: 75px; flex-shrink: 0; }
         button.active { border-color: var(--accent); background: #3d2a00; }
@@ -95,7 +98,8 @@
     ];
 
     let gridData = [];
-    const GRID_SIZE = 30;
+    const COLS = 45;
+    const ROWS = 22;
     const COSTS = { 
         miner: { iron: 50 }, solar: { iron: 40, copper: 20 }, fuel: { iron: 150, copper: 80 },
         glass_factory: { iron: 80, quartz: 40 }, motor_factory: { iron: 120, copper: 60 }, cable_factory: { iron: 60, copper: 40 }
@@ -103,10 +107,10 @@
 
     function init() {
         const gridEl = document.getElementById('grid');
-        for (let i = 0; i < GRID_SIZE * GRID_SIZE; i++) {
+        for (let i = 0; i < COLS * ROWS; i++) {
             let r = Math.random();
-            let type = (r > 0.98) ? 'oil' : (r > 0.96) ? 'quartz' : (r > 0.92) ? 'copper' : (r > 0.85) ? 'iron' : 'empty';
-            gridData.push({ id: i, type, build: null, stock: 5000 });
+            let type = (r > 0.98) ? 'oil' : (r > 0.96) ? 'quartz' : (r > 0.93) ? 'copper' : (r > 0.88) ? 'iron' : 'empty';
+            gridData.push({ id: i, type, build: null });
         }
         gridData.forEach((c, i) => {
             let cell = document.createElement('div');
@@ -125,13 +129,13 @@
             let div = document.createElement('div');
             div.className = `tech-item ${state.tier === t.id ? 'current' : ''} ${state.tier > t.id ? 'unlocked' : ''}`;
             
-            let costsHtml = Object.entries(t.cost).map(([res, val]) => `<div>${val} ${res}</div>`).join("");
+            let costsHtml = Object.entries(t.cost).map(([res, val]) => `<div>• ${val} ${res}</div>`).join("");
             let canAfford = Object.entries(t.cost).every(([res, val]) => state.res[res] >= val);
             
             div.innerHTML = `
                 <h4>TIER ${t.id}</h4>
-                <p style="margin:2px 0">${t.name}</p>
-                <div style="font-size:8px; color:#aaa; margin-bottom:5px;">${costsHtml}</div>
+                <p>${t.name}</p>
+                <div style="font-size:8px; color:#aaa; margin-bottom:8px;">${costsHtml}</div>
                 ${state.tier === t.id - 1 ? `<button onclick="upgradeTier(${t.id})" ${!canAfford ? 'disabled' : ''}>DÉBLOQUER</button>` : ''}
             `;
             list.appendChild(div);
@@ -153,9 +157,7 @@
 
     function handleCellClick(i) {
         let cell = gridData[i];
-        if (state.mode === 'recycle' && cell.build) {
-            cell.build = null; updateCellUI(i); return;
-        }
+        if (state.mode === 'recycle' && cell.build) { cell.build = null; updateCellUI(i); return; }
         if (cell.build || !state.mode) return;
         let cost = COSTS[state.mode];
         if (cost && Object.keys(cost).every(r => state.res[r] >= cost[r])) {
@@ -194,12 +196,10 @@
         gridData.forEach((c, idx) => {
             if(!c.build) return;
             let canWork = false;
-
             if(c.build === 'miner') { powerReq += 8; if(currentPower >= powerReq) { state.res[c.type] += speed; gains[c.type] += speed; canWork = true; } }
             else if(c.build === 'glass_factory') { powerReq += 10; if(currentPower >= powerReq && state.res.quartz >= 1) { state.res.quartz -= 1; losses.quartz++; state.res.glass += speed; gains.glass += speed; canWork = true; } }
             else if(c.build === 'motor_factory') { powerReq += 15; if(currentPower >= powerReq && state.res.iron >= 1 && state.res.copper >= 1) { state.res.iron -= 1; state.res.copper -= 1; losses.iron++; losses.copper++; state.res.motor += speed; gains.motor += speed; canWork = true; } }
             else if(c.build === 'cable_factory') { powerReq += 8; if(currentPower >= powerReq && state.res.copper >= 1) { state.res.copper -= 1; losses.copper++; state.res.cable += speed; gains.cable += speed; canWork = true; } }
-            
             if(['miner','glass_factory','motor_factory','cable_factory'].includes(c.build)) updateCellUI(idx, canWork ? null : '❌');
         });
 
@@ -214,7 +214,6 @@
         document.getElementById('p-cons').innerText = Math.round(powerReq);
         document.getElementById('p-prod').innerText = Math.round(currentPower);
         document.getElementById('power-bar').style.color = currentPower < powerReq ? 'var(--danger)' : 'var(--power)';
-        
         updateTechTree(); 
     }, 1000);
 
