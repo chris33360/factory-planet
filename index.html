@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Factory Planet - Wide Layout</title>
+    <title>Factory Planet - Tech Bonuses</title>
     <style>
         :root { 
             --bg: #0f0f0f; --panel: #1a1a1a; --accent: #ff9800; 
@@ -12,24 +12,31 @@
         }
         body { font-family: 'Segoe UI', Tahoma, sans-serif; background: var(--bg); color: white; margin: 0; overflow: hidden; touch-action: none; display: flex; }
         
-        /* HUD */
-        #hud { position: fixed; top: 0; left: 0; width: calc(100% - 150px); background: rgba(26,26,26,0.95); z-index: 100; padding: 8px; border-bottom: 1px solid #333; box-sizing: border-box; }
+        /* HUD SUPERIEUR */
+        #hud { position: fixed; top: 0; left: 120px; width: calc(100% - 270px); background: rgba(26,26,26,0.95); z-index: 100; padding: 8px; border-bottom: 1px solid #333; box-sizing: border-box; }
         .res-grid { font-size: 10px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; }
         .res-item { display: flex; align-items: center; gap: 4px; white-space: nowrap; }
         .flux { font-size: 8px; opacity: 0.8; }
         .gain { color: var(--power); } .loss { color: var(--danger); }
         
-        /* TECH TREE (Design précédent restauré) */
+        /* MENU CONSTRUCTION (GAUCHE) */
+        #controls { width: 120px; height: 100vh; background: var(--panel); border-right: 1px solid #333; z-index: 101; padding: 10px; box-sizing: border-box; display: flex; flex-direction: column; gap: 8px; overflow-y: auto; flex-shrink: 0; }
+        #controls h3 { font-size: 11px; margin: 0 0 5px 0; color: #888; text-align: center; text-transform: uppercase; }
+        button.build-btn { background: #2a2a2a; color: white; border: 1px solid #444; padding: 8px 4px; border-radius: 4px; font-size: 10px; cursor: pointer; transition: 0.2s; text-align: left; }
+        button.build-btn span { display: block; font-size: 8px; color: #aaa; margin-top: 2px; }
+        button.active { border-color: var(--accent); background: #3d2a00; }
+        
+        /* TECH TREE (DROITE) */
         #tech-tree { width: 150px; height: 100vh; background: var(--panel); border-left: 1px solid #333; z-index: 101; padding: 10px; box-sizing: border-box; overflow-y: auto; flex-shrink: 0; }
-        .tech-item { background: #222; border: 1px solid #444; padding: 8px; border-radius: 4px; margin-bottom: 10px; font-size: 10px; opacity: 0.5; transition: 0.3s; }
-        .tech-item.current { opacity: 1; border-color: var(--accent); box-shadow: 0 0 5px rgba(255,152,0,0.3); }
-        .tech-item.unlocked { opacity: 1; border-color: var(--power); background: #1b2e1b; }
-        .tech-item h4 { margin: 0 0 5px 0; font-size: 11px; color: var(--accent); }
-        .tech-item p { margin: 0 0 5px 0; color: #bbb; line-height: 1.2; }
-        .tech-item button { width: 100%; background: var(--accent); color: black; border: none; padding: 4px; border-radius: 2px; font-weight: bold; cursor: pointer; font-size: 9px; }
+        .tech-item { background: #222; border: 1px solid #444; padding: 8px; border-radius: 4px; margin-bottom: 10px; font-size: 10px; opacity: 0.4; border-left: 3px solid transparent; }
+        .tech-item.current { opacity: 1; border-color: var(--accent); border-left-color: var(--accent); background: #2a2010; }
+        .tech-item.unlocked { opacity: 1; border-color: var(--power); border-left-color: var(--power); background: #1b2e1b; }
+        .tech-item h4 { margin: 0 0 2px 0; font-size: 11px; color: var(--accent); }
+        .tech-item .bonus { color: #4caf50; font-weight: bold; font-size: 9px; margin-bottom: 5px; display: block; }
+        .tech-item button { width: 100%; background: var(--accent); color: black; border: none; padding: 4px; border-radius: 2px; font-weight: bold; font-size: 9px; margin-top: 5px; cursor: pointer; }
         .tech-item button:disabled { background: #444; color: #888; cursor: not-allowed; }
 
-        /* VIEWPORT ET GRILLE 45x22 */
+        /* ZONE DE JEU */
         #viewport { flex-grow: 1; height: 100vh; overflow: hidden; display: flex; align-items: center; justify-content: center; background: #080808; position: relative; }
         #grid { display: grid; grid-template-columns: repeat(45, 35px); grid-template-rows: repeat(22, 35px); gap: 1px; }
         .cell { width: 35px; height: 35px; background: #141414; border: 1px solid #1f1f1f; display: flex; align-items: center; justify-content: center; font-size: 16px; position: relative; }
@@ -39,17 +46,24 @@
         .cell.oil { background-color: var(--oil); }
         .status-icon { position: absolute; font-size: 10px; top: 0; right: 0; }
 
-        /* CONTROLES */
-        #controls { position: fixed; bottom: 0; left: 0; width: calc(100% - 150px); background: var(--panel); padding: 10px; display: flex; gap: 8px; overflow-x: auto; border-top: 1px solid #333; z-index: 100; box-sizing: border-box; }
-        button.build-btn { background: #2a2a2a; color: white; border: 1px solid #444; padding: 6px; border-radius: 4px; font-size: 10px; min-width: 75px; flex-shrink: 0; }
-        button.active { border-color: var(--accent); background: #3d2a00; }
-        
         #power-bar { font-size: 10px; font-weight: bold; background: #000; padding: 4px; border-radius: 3px; margin-top: 6px; text-align: center; border: 1px solid #222; }
         .night-mode #viewport { background: #050510 !important; }
-        .night-mode #grid { filter: brightness(0.6); }
+        .night-mode #grid { filter: brightness(0.7); }
     </style>
 </head>
 <body id="main-body">
+
+<div id="controls">
+    <h3>🔨 Bâtir</h3>
+    <button class="build-btn" id="btn-miner" onclick="setMode('miner')">⛏️ Mineur <span>50 Fe</span></button>
+    <button class="build-btn" id="btn-solar" onclick="setMode('solar')">☀️ Solaire <span>40 Fe, 20 Cu</span></button>
+    <button class="build-btn" id="btn-fuel" onclick="setMode('fuel')">⚡ Géné <span>150 Fe, 80 Cu</span></button>
+    <button class="build-btn" id="btn-glass_factory" onclick="setMode('glass_factory')">🏺 Verre <span>80 Fe, 40 Qz</span></button>
+    <button class="build-btn" id="btn-motor_factory" onclick="setMode('motor_factory')">⚙️ Moteur <span>120 Fe, 60 Cu</span></button>
+    <button class="build-btn" id="btn-cable_factory" onclick="setMode('cable_factory')">🔌 Câble <span>60 Fe, 40 Cu</span></button>
+    <div style="flex-grow: 1;"></div>
+    <button class="build-btn" id="btn-recycle" onclick="setMode('recycle')" style="color:var(--danger); border-color: #522;">♻️ SUPPR</button>
+</div>
 
 <div id="hud">
     <div class="res-grid">
@@ -74,16 +88,6 @@
     <div id="tier-list"></div>
 </div>
 
-<div id="controls">
-    <button class="build-btn" id="btn-miner" onclick="setMode('miner')">⛏️ Miner</button>
-    <button class="build-btn" id="btn-solar" onclick="setMode('solar')">☀️ Solaire</button>
-    <button class="build-btn" id="btn-fuel" onclick="setMode('fuel')">⚡ Géné</button>
-    <button class="build-btn" id="btn-glass_factory" onclick="setMode('glass_factory')">🏺 Verre</button>
-    <button class="build-btn" id="btn-motor_factory" onclick="setMode('motor_factory')">⚙️ Moteur</button>
-    <button class="build-btn" id="btn-cable_factory" onclick="setMode('cable_factory')">🔌 Câble</button>
-    <button class="build-btn" id="btn-recycle" onclick="setMode('recycle')" style="color:var(--danger)">♻️ SUPPR</button>
-</div>
-
 <script>
     let state = {
         res: { iron: 300, copper: 150, quartz: 50, oil: 0, glass: 0, motor: 0, cable: 0 },
@@ -91,15 +95,14 @@
     };
 
     const TECHS = [
-        { id: 1, name: "Base", cost: {}, desc: "Extraction primaire." },
-        { id: 2, name: "Industrie", cost: { iron: 1000, motor: 20 }, desc: "Vitesse x1.5" },
-        { id: 3, name: "Électronique", cost: { iron: 2500, cable: 100, glass: 50 }, desc: "Vitesse x2.0" },
-        { id: 4, name: "Spatiale", cost: { iron: 10000, motor: 500, cable: 500, glass: 200 }, desc: "Victoire !" }
+        { id: 1, name: "Base", bonus: "+0%", cost: {}, desc: "Extraction primaire." },
+        { id: 2, name: "Industrie", bonus: "+20% Prod", cost: { iron: 1000, motor: 20 }, desc: "Optimisation des moteurs." },
+        { id: 3, name: "Électronique", bonus: "+50% Prod", cost: { iron: 2500, cable: 100, glass: 50 }, desc: "Circuits avancés." },
+        { id: 4, name: "Ère Spatiale", bonus: "+100% Prod", cost: { iron: 10000, motor: 500, cable: 500, glass: 200 }, desc: "Conquête orbitale." }
     ];
 
     let gridData = [];
-    const COLS = 45;
-    const ROWS = 22;
+    const COLS = 45, ROWS = 22;
     const COSTS = { 
         miner: { iron: 50 }, solar: { iron: 40, copper: 20 }, fuel: { iron: 150, copper: 80 },
         glass_factory: { iron: 80, quartz: 40 }, motor_factory: { iron: 120, copper: 60 }, cable_factory: { iron: 60, copper: 40 }
@@ -128,15 +131,13 @@
         TECHS.forEach(t => {
             let div = document.createElement('div');
             div.className = `tech-item ${state.tier === t.id ? 'current' : ''} ${state.tier > t.id ? 'unlocked' : ''}`;
-            
             let costsHtml = Object.entries(t.cost).map(([res, val]) => `<div>• ${val} ${res}</div>`).join("");
             let canAfford = Object.entries(t.cost).every(([res, val]) => state.res[res] >= val);
-            
             div.innerHTML = `
                 <h4>TIER ${t.id}</h4>
-                <p>${t.name}</p>
-                <div style="font-size:8px; color:#aaa; margin-bottom:8px;">${costsHtml}</div>
-                ${state.tier === t.id - 1 ? `<button onclick="upgradeTier(${t.id})" ${!canAfford ? 'disabled' : ''}>DÉBLOQUER</button>` : ''}
+                <div class="bonus">${t.name} : ${t.bonus}</div>
+                <div style="font-size:8px; color:#aaa; margin-bottom:5px;">${costsHtml}</div>
+                ${state.tier === t.id - 1 ? `<button onclick="upgradeTier(${t.id})" ${!canAfford ? 'disabled' : ''}>RECHERCHER</button>` : ''}
             `;
             list.appendChild(div);
         });
@@ -181,13 +182,16 @@
         document.getElementById('main-body').className = isNight ? 'night-mode' : '';
         document.getElementById('cycle-info').innerHTML = isNight ? '🌙' : '☀️';
 
-        let speed = 1 + (state.tier - 1) * 0.5;
-        let solarProd = gridData.filter(c => c.build === 'solar').length * (15 * speed * (isNight ? 0.3 : 1.0));
+        // Logique de bonus par Tier
+        const bonuses = { 1: 1.0, 2: 1.2, 3: 1.5, 4: 2.0 };
+        let speed = bonuses[state.tier];
+
+        let solarProd = gridData.filter(c => c.build === 'solar').length * (15 * (isNight ? 0.3 : 1.0));
         let currentPower = solarProd;
         let oilCons = 0;
         
         gridData.filter(c => c.build === 'fuel').forEach(g => {
-            if (state.res.oil >= 1) { state.res.oil -= 1; oilCons++; currentPower += 30 * speed; updateCellUI(gridData.indexOf(g)); }
+            if (state.res.oil >= 1) { state.res.oil -= 1; oilCons++; currentPower += 30; updateCellUI(gridData.indexOf(g)); }
             else { updateCellUI(gridData.indexOf(g), '⚠️'); }
         });
 
@@ -218,7 +222,10 @@
     }, 1000);
 
     let isDragging = false, lastMouse = { x: 0, y: 0 };
-    window.onpointerdown = (e) => { if(!e.target.closest('#tech-tree') && !e.target.closest('#controls')) isDragging = true; lastMouse = { x: e.clientX, y: e.clientY }; };
+    window.onpointerdown = (e) => { 
+        if(!e.target.closest('#tech-tree') && !e.target.closest('#controls') && !e.target.closest('#hud')) isDragging = true; 
+        lastMouse = { x: e.clientX, y: e.clientY }; 
+    };
     window.onpointerup = () => isDragging = false;
     window.onpointermove = (e) => {
         if (!isDragging) return;
