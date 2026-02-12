@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Factory Planet - Tech Tree Update</title>
+    <title>Factory Planet - Layout Fix</title>
     <style>
         :root { 
             --bg: #0f0f0f; --panel: #1a1a1a; --accent: #ff9800; 
@@ -12,21 +12,22 @@
         }
         body { font-family: 'Segoe UI', Tahoma, sans-serif; background: var(--bg); color: white; margin: 0; overflow: hidden; touch-action: none; display: flex; }
         
-        /* HUD SUPERIEUR */
-        #hud { position: fixed; top: 0; left: 0; width: calc(100% - 150px); background: rgba(26,26,26,0.9); z-index: 100; padding: 5px; border-bottom: 1px solid #333; display: grid; grid-template-columns: 1fr; }
-        .res-grid { font-size: 9px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 2px; }
+        /* HUD - Ajusté pour ne pas passer sous le Tech Tree */
+        #hud { position: fixed; top: 0; left: 0; width: calc(100% - 150px); background: rgba(26,26,26,0.95); z-index: 100; padding: 8px; border-bottom: 1px solid #333; box-sizing: border-box; }
+        .res-grid { font-size: 10px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
+        .res-item { display: flex; align-items: center; gap: 4px; }
         .flux { font-size: 8px; opacity: 0.8; }
         .gain { color: var(--power); } .loss { color: var(--danger); }
         
-        /* ARBRE TECH (DROITE) */
-        #tech-tree { width: 150px; height: 100vh; background: var(--panel); border-left: 1px solid #333; z-index: 101; padding: 10px; box-sizing: border-box; overflow-y: auto; }
-        .tech-item { background: #222; border: 1px solid #444; padding: 8px; border-radius: 4px; margin-bottom: 10px; font-size: 10px; opacity: 0.5; transition: 0.3s; }
-        .tech-item.current { opacity: 1; border-color: var(--accent); box-shadow: 0 0 5px rgba(255,152,0,0.3); }
+        /* ARBRE TECH (DROITE) - Fixe sur le côté */
+        #tech-tree { width: 150px; height: 100vh; background: var(--panel); border-left: 1px solid #333; z-index: 101; padding: 10px; box-sizing: border-box; overflow-y: auto; flex-shrink: 0; }
+        .tech-item { background: #222; border: 1px solid #444; padding: 8px; border-radius: 4px; margin-bottom: 10px; font-size: 10px; opacity: 0.5; }
+        .tech-item.current { opacity: 1; border-color: var(--accent); }
         .tech-item.unlocked { opacity: 1; border-color: var(--power); background: #1b2e1b; }
         .tech-item h4 { margin: 0 0 5px 0; font-size: 11px; color: var(--accent); }
         
-        /* GRILLE ET CASES RÉDUITES */
-        #viewport { flex-grow: 1; height: 100vh; overflow: hidden; display: flex; align-items: center; justify-content: center; background: #080808; }
+        /* GRILLE */
+        #viewport { flex-grow: 1; height: 100vh; overflow: hidden; display: flex; align-items: center; justify-content: center; background: #080808; position: relative; }
         #grid { display: grid; grid-template-columns: repeat(30, 35px); grid-template-rows: repeat(30, 35px); gap: 1px; }
         .cell { width: 35px; height: 35px; background: #141414; border: 1px solid #1f1f1f; display: flex; align-items: center; justify-content: center; font-size: 16px; position: relative; }
         .cell.iron { background-color: var(--iron); }
@@ -35,48 +36,49 @@
         .cell.oil { background-color: var(--oil); }
         .status-icon { position: absolute; font-size: 10px; top: 0; right: 0; }
 
-        /* BARRE DE CONSTRUCTION */
-        #controls { position: fixed; bottom: 0; left: 0; width: calc(100% - 150px); background: var(--panel); padding: 8px; display: flex; gap: 5px; overflow-x: auto; border-top: 1px solid #333; z-index: 100; }
-        button { background: #2a2a2a; color: white; border: 1px solid #444; padding: 5px; border-radius: 3px; font-size: 9px; min-width: 70px; flex-shrink: 0; }
+        /* BARRE DE CONSTRUCTION - Ajustée pour ne pas passer sous le Tech Tree */
+        #controls { position: fixed; bottom: 0; left: 0; width: calc(100% - 150px); background: var(--panel); padding: 10px; display: flex; gap: 8px; overflow-x: auto; border-top: 1px solid #333; z-index: 100; box-sizing: border-box; }
+        button.build-btn { background: #2a2a2a; color: white; border: 1px solid #444; padding: 6px; border-radius: 4px; font-size: 10px; min-width: 75px; flex-shrink: 0; }
         button.active { border-color: var(--accent); background: #3d2a00; }
         
-        #power-bar { font-size: 10px; font-weight: bold; background: #000; padding: 2px 5px; border-radius: 3px; margin-top: 5px; text-align: center; }
-        .night-mode { background: #050510 !important; }
+        #power-bar { font-size: 10px; font-weight: bold; background: #000; padding: 4px; border-radius: 3px; margin-top: 6px; text-align: center; border: 1px solid #222; }
+        .night-mode #viewport { background: #050510 !important; }
+        .night-mode #grid { filter: brightness(0.6); }
     </style>
 </head>
-<body>
+<body id="main-body">
 
 <div id="hud">
     <div class="res-grid">
-        <div>Fe: <span id="res-iron">0</span> <span id="flux-iron" class="flux"></span></div>
-        <div>Cu: <span id="res-copper">0</span> <span id="flux-copper" class="flux"></span></div>
-        <div>Qz: <span id="res-quartz">0</span> <span id="flux-quartz" class="flux"></span></div>
-        <div>Oil: <span id="res-oil">0</span> <span id="flux-oil" class="flux"></span></div>
-        <div>Glass: <span id="res-glass">0</span> <span id="flux-glass" class="flux"></span></div>
-        <div>Mot: <span id="res-motor">0</span> <span id="flux-motor" class="flux"></span></div>
-        <div>Cab: <span id="res-cable">0</span> <span id="flux-cable" class="flux"></span></div>
-        <div id="cycle-info">☀️</div>
+        <div class="res-item" style="color:#ddd">Fe: <span id="res-iron">0</span> <span id="flux-iron" class="flux"></span></div>
+        <div class="res-item" style="color:#ffccbc">Cu: <span id="res-copper">0</span> <span id="flux-copper" class="flux"></span></div>
+        <div class="res-item" style="color:#b2dfdb">Qz: <span id="res-quartz">0</span> <span id="flux-quartz" class="flux"></span></div>
+        <div class="res-item" style="color:#fff">Oil: <span id="res-oil">0</span> <span id="flux-oil" class="flux"></span></div>
+        <div class="res-item" style="color:#e1f5fe">Gls: <span id="res-glass">0</span> <span id="flux-glass" class="flux"></span></div>
+        <div class="res-item" style="color:#ffe0b2">Mot: <span id="res-motor">0</span> <span id="flux-motor" class="flux"></span></div>
+        <div class="res-item" style="color:#f0f4c3">Cab: <span id="res-cable">0</span> <span id="flux-cable" class="flux"></span></div>
+        <div id="cycle-info" style="text-align: right; font-weight: bold;">☀️</div>
     </div>
     <div id="power-bar">⚡ <span id="p-cons">0</span>W / <span id="p-prod">0</span>W</div>
-</div>
-
-<div id="tech-tree">
-    <h3 style="font-size: 12px; margin-top: 0;">🚀 TECH TREE</h3>
-    <div id="tier-list"></div>
 </div>
 
 <div id="viewport">
     <div id="grid"></div>
 </div>
 
+<div id="tech-tree">
+    <h3 style="font-size: 12px; margin: 0 0 10px 0; border-bottom: 1px solid #444; padding-bottom: 5px;">🚀 TECH TREE</h3>
+    <div id="tier-list"></div>
+</div>
+
 <div id="controls">
-    <button id="btn-miner" onclick="setMode('miner')">⛏️ Miner</button>
-    <button id="btn-solar" onclick="setMode('solar')">☀️ Solaire</button>
-    <button id="btn-fuel" onclick="setMode('fuel')">⚡ Géné</button>
-    <button id="btn-glass_factory" onclick="setMode('glass_factory')">🏺 Verre</button>
-    <button id="btn-motor_factory" onclick="setMode('motor_factory')">⚙️ Moteur</button>
-    <button id="btn-cable_factory" onclick="setMode('cable_factory')">🔌 Câble</button>
-    <button id="btn-recycle" onclick="setMode('recycle')" style="color:var(--danger)">♻️ SUPPR</button>
+    <button class="build-btn" id="btn-miner" onclick="setMode('miner')">⛏️ Miner</button>
+    <button class="build-btn" id="btn-solar" onclick="setMode('solar')">☀️ Solaire</button>
+    <button class="build-btn" id="btn-fuel" onclick="setMode('fuel')">⚡ Géné</button>
+    <button class="build-btn" id="btn-glass_factory" onclick="setMode('glass_factory')">🏺 Verre</button>
+    <button class="build-btn" id="btn-motor_factory" onclick="setMode('motor_factory')">⚙️ Moteur</button>
+    <button class="build-btn" id="btn-cable_factory" onclick="setMode('cable_factory')">🔌 Câble</button>
+    <button class="build-btn" id="btn-recycle" onclick="setMode('recycle')" style="color:var(--danger)">♻️ SUPPR</button>
 </div>
 
 <script>
@@ -86,14 +88,14 @@
     };
 
     const TECHS = [
-        { id: 1, name: "Base", cost: { iron: 0 }, desc: "Début de l'aventure" },
-        { id: 2, name: "Industrialisation", cost: { iron: 1000, motor: 20 }, desc: "Vitesse x1.5" },
+        { id: 1, name: "Base", cost: {}, desc: "Extraction primaire." },
+        { id: 2, name: "Industrie", cost: { iron: 1000, motor: 20 }, desc: "Vitesse x1.5" },
         { id: 3, name: "Électronique", cost: { iron: 2500, cable: 100, glass: 50 }, desc: "Vitesse x2.0" },
-        { id: 4, name: "Ère Spatiale", cost: { iron: 10000, motor: 500, cable: 500, glass: 200 }, desc: "Victoire !" }
+        { id: 4, name: "Spatiale", cost: { iron: 10000, motor: 500, cable: 500, glass: 200 }, desc: "Victoire !" }
     ];
 
     let gridData = [];
-    const GRID_COLS = 30;
+    const GRID_SIZE = 30;
     const COSTS = { 
         miner: { iron: 50 }, solar: { iron: 40, copper: 20 }, fuel: { iron: 150, copper: 80 },
         glass_factory: { iron: 80, quartz: 40 }, motor_factory: { iron: 120, copper: 60 }, cable_factory: { iron: 60, copper: 40 }
@@ -101,7 +103,7 @@
 
     function init() {
         const gridEl = document.getElementById('grid');
-        for (let i = 0; i < GRID_COLS * GRID_COLS; i++) {
+        for (let i = 0; i < GRID_SIZE * GRID_SIZE; i++) {
             let r = Math.random();
             let type = (r > 0.98) ? 'oil' : (r > 0.96) ? 'quartz' : (r > 0.92) ? 'copper' : (r > 0.85) ? 'iron' : 'empty';
             gridData.push({ id: i, type, build: null, stock: 5000 });
@@ -120,27 +122,32 @@
         const list = document.getElementById('tier-list');
         list.innerHTML = "";
         TECHS.forEach(t => {
-            let canAfford = Object.keys(t.cost).every(r => state.res[r] >= t.cost[r]);
             let div = document.createElement('div');
             div.className = `tech-item ${state.tier === t.id ? 'current' : ''} ${state.tier > t.id ? 'unlocked' : ''}`;
-            let costHtml = Object.entries(t.cost).map(([r, v]) => `<div>${v} ${r}</div>`).join("");
-            div.innerHTML = `<h4>TIER ${t.id}: ${t.name}</h4><p>${t.desc}</p>${state.tier === t.id - 1 ? `<button onclick="upgradeTier(${t.id})" ${!canAfford ? 'disabled' : ''}>RECHERCHER</button><div style="font-size:8px; margin-top:5px;">${costHtml}</div>` : ''}`;
+            
+            let costsHtml = Object.entries(t.cost).map(([res, val]) => `<div>${val} ${res}</div>`).join("");
+            let canAfford = Object.entries(t.cost).every(([res, val]) => state.res[res] >= val);
+            
+            div.innerHTML = `
+                <h4>TIER ${t.id}</h4>
+                <p style="margin:2px 0">${t.name}</p>
+                <div style="font-size:8px; color:#aaa; margin-bottom:5px;">${costsHtml}</div>
+                ${state.tier === t.id - 1 ? `<button onclick="upgradeTier(${t.id})" ${!canAfford ? 'disabled' : ''}>DÉBLOQUER</button>` : ''}
+            `;
             list.appendChild(div);
         });
     }
 
-    function upgradeTier(nextId) {
-        let tech = TECHS.find(t => t.id === nextId);
-        if (Object.keys(tech.cost).every(r => state.res[r] >= tech.cost[r])) {
-            Object.keys(tech.cost).forEach(r => state.res[r] -= tech.cost[r]);
-            state.tier = nextId;
-            updateTechTree();
-        }
+    function upgradeTier(id) {
+        let tech = TECHS.find(t => t.id === id);
+        Object.entries(tech.cost).forEach(([res, val]) => state.res[res] -= val);
+        state.tier = id;
+        updateTechTree();
     }
 
     function setMode(m) {
         state.mode = (state.mode === m) ? null : m;
-        document.querySelectorAll('#controls button').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.build-btn').forEach(b => b.classList.remove('active'));
         if(state.mode) document.getElementById('btn-' + m).classList.add('active');
     }
 
@@ -169,15 +176,16 @@
     setInterval(() => {
         state.time = (state.time + 1) % 60;
         const isNight = state.time >= 30;
-        document.body.className = isNight ? 'night-mode' : '';
+        document.getElementById('main-body').className = isNight ? 'night-mode' : '';
         document.getElementById('cycle-info').innerHTML = isNight ? '🌙' : '☀️';
 
-        let solarProd = gridData.filter(c => c.build === 'solar').length * (15 * state.tier * (isNight ? 0.3 : 1.0));
+        let speed = 1 + (state.tier - 1) * 0.5;
+        let solarProd = gridData.filter(c => c.build === 'solar').length * (15 * speed * (isNight ? 0.3 : 1.0));
         let currentPower = solarProd;
         let oilCons = 0;
         
         gridData.filter(c => c.build === 'fuel').forEach(g => {
-            if (state.res.oil >= 1) { state.res.oil -= 1; oilCons++; currentPower += 30 * state.tier; updateCellUI(gridData.indexOf(g)); }
+            if (state.res.oil >= 1) { state.res.oil -= 1; oilCons++; currentPower += 30 * speed; updateCellUI(gridData.indexOf(g)); }
             else { updateCellUI(gridData.indexOf(g), '⚠️'); }
         });
 
@@ -186,12 +194,11 @@
         gridData.forEach((c, idx) => {
             if(!c.build) return;
             let canWork = false;
-            let speed = 1 + (state.tier * 0.5);
 
-            if(c.build === 'miner') { powerReq += 8; if(currentPower >= powerReq) { let q = speed; state.res[c.type] += q; gains[c.type] += q; canWork = true; } }
-            else if(c.build === 'glass_factory') { powerReq += 10; if(currentPower >= powerReq && state.res.quartz >= 1) { state.res.quartz -= 1; losses.quartz++; state.res.glass += 1; gains.glass++; canWork = true; } }
-            else if(c.build === 'motor_factory') { powerReq += 15; if(currentPower >= powerReq && state.res.iron >= 1 && state.res.copper >= 1) { state.res.iron -= 1; state.res.copper -= 1; losses.iron++; losses.copper++; state.res.motor += 1; gains.motor++; canWork = true; } }
-            else if(c.build === 'cable_factory') { powerReq += 8; if(currentPower >= powerReq && state.res.copper >= 1) { state.res.copper -= 1; losses.copper++; state.res.cable += 1; gains.cable++; canWork = true; } }
+            if(c.build === 'miner') { powerReq += 8; if(currentPower >= powerReq) { state.res[c.type] += speed; gains[c.type] += speed; canWork = true; } }
+            else if(c.build === 'glass_factory') { powerReq += 10; if(currentPower >= powerReq && state.res.quartz >= 1) { state.res.quartz -= 1; losses.quartz++; state.res.glass += speed; gains.glass += speed; canWork = true; } }
+            else if(c.build === 'motor_factory') { powerReq += 15; if(currentPower >= powerReq && state.res.iron >= 1 && state.res.copper >= 1) { state.res.iron -= 1; state.res.copper -= 1; losses.iron++; losses.copper++; state.res.motor += speed; gains.motor += speed; canWork = true; } }
+            else if(c.build === 'cable_factory') { powerReq += 8; if(currentPower >= powerReq && state.res.copper >= 1) { state.res.copper -= 1; losses.copper++; state.res.cable += speed; gains.cable += speed; canWork = true; } }
             
             if(['miner','glass_factory','motor_factory','cable_factory'].includes(c.build)) updateCellUI(idx, canWork ? null : '❌');
         });
@@ -199,20 +206,20 @@
         ['iron', 'copper', 'quartz', 'oil', 'glass', 'motor', 'cable'].forEach(r => {
             document.getElementById(`res-${r}`).innerText = Math.floor(state.res[r]);
             let net = gains[r] - (losses[r] || 0);
-            document.getElementById(`flux-${r}`).innerText = (net >= 0 ? "+" : "") + net.toFixed(1);
-            document.getElementById(`flux-${r}`).className = "flux " + (net >= 0 ? "gain" : "loss");
+            let f = document.getElementById(`flux-${r}`);
+            f.innerText = (net >= 0 ? "+" : "") + net.toFixed(1);
+            f.className = "flux " + (net >= 0 ? "gain" : "loss");
         });
 
         document.getElementById('p-cons').innerText = Math.round(powerReq);
         document.getElementById('p-prod').innerText = Math.round(currentPower);
         document.getElementById('power-bar').style.color = currentPower < powerReq ? 'var(--danger)' : 'var(--power)';
         
-        updateTechTree(); // Refresh tech tree button state
+        updateTechTree(); 
     }, 1000);
 
-    // Zoom/Drag
     let isDragging = false, lastMouse = { x: 0, y: 0 };
-    window.onpointerdown = (e) => { if(e.target.closest('#viewport')) isDragging = true; lastMouse = { x: e.clientX, y: e.clientY }; };
+    window.onpointerdown = (e) => { if(!e.target.closest('#tech-tree') && !e.target.closest('#controls')) isDragging = true; lastMouse = { x: e.clientX, y: e.clientY }; };
     window.onpointerup = () => isDragging = false;
     window.onpointermove = (e) => {
         if (!isDragging) return;
