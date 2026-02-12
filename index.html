@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Factory Planet - Power Demand Focus</title>
+    <title>Factory Planet - Fixed Mining</title>
     <style>
         :root { 
             --bg: #0f0f0f; --panel: #1a1a1a; --accent: #ff9800; 
@@ -132,6 +132,13 @@
         if(Date.now() < gridData[i].deadUntil) return;
         if (state.mode === 'recycle') { gridData[i].build = null; return; }
         if (gridData[i].build || !state.mode) return;
+
+        // VERIFICATION MINEUR : Uniquement sur fer, cuivre, quartz ou pétrole
+        if (state.mode === 'miner' && gridData[i].type === 'empty') {
+            console.log("Impossible de poser un mineur sur du vide !");
+            return; 
+        }
+
         let cost = COSTS[state.mode];
         if (cost && Object.keys(cost).every(r => state.res[r] >= cost[r])) {
             Object.keys(cost).forEach(r => state.res[r] -= cost[r]);
@@ -176,7 +183,7 @@
 
         state.maxEnergy = gridData.filter(c => c.build === 'battery_block').length * 10;
         
-        let need = 0; // Calcul du BESOIN (100%)
+        let need = 0; 
         gridData.forEach(c => {
             if(!c.build || Date.now() < c.deadUntil) return;
             const pMap = { miner:8, glass_factory:10, plastic_factory:12, cable_factory:8, motor_factory:15, battery_factory:20, robot_factory:40, rocket_factory:100 };
