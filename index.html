@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Factory Planet - Tech Bonuses</title>
+    <title>Factory Planet - Targeted Bonuses</title>
     <style>
         :root { 
             --bg: #0f0f0f; --panel: #1a1a1a; --accent: #ff9800; 
@@ -96,10 +96,9 @@
 
     const TECHS = [
         { id: 1, name: "Base", bonus: "+0%", cost: {}, desc: "Extraction primaire." },
-        { id: 2, name: "Industrie", bonus: "+20% Production extracteurs", cost: { iron: 1000, motor: 20 }, },
-        { id: 3, name: "Électronique", bonus: "+50% Prod", cost: { iron: 2500, cable: 100, glass: 50 }, desc: "Circuits avancés." },
-        { id: 4, name: "Ère Spatiale", bonus: "+100% Prod", cost: { iron: 10000, motor: 500, cable: 500, glass: 200 }, desc: "Conquête orbitale." },
-        { id: 4, name: "Exploration Spatiale", bonus: "+100% Prod", cost: { iron: 10000, motor: 500, cable: 500, glass: 200 }, desc: "Conquête orbitale." }
+        { id: 2, name: "Industrie", bonus: "+20% Mineurs", cost: { iron: 1000, motor: 20 }, desc: "Fils d'acier renforcés." },
+        { id: 3, name: "Électronique", bonus: "+50% Global", cost: { iron: 2500, cable: 100, glass: 50 }, desc: "Circuits avancés." },
+        { id: 4, name: "Ère Spatiale", bonus: "+100% Global", cost: { iron: 10000, motor: 500, cable: 500, glass: 200 }, desc: "Conquête orbitale." }
     ];
 
     let gridData = [];
@@ -183,9 +182,14 @@
         document.getElementById('main-body').className = isNight ? 'night-mode' : '';
         document.getElementById('cycle-info').innerHTML = isNight ? '🌙' : '☀️';
 
-        // Logique de bonus par Tier
-        const bonuses = { 1: 1.0, 2: 1.2, 3: 1.5, 4: 2.0 };
-        let speed = bonuses[state.tier];
+        // Logique de bonus ciblée
+        // Vitesse de base des usines
+        const factoryBonuses = { 1: 1.0, 2: 1.0, 3: 1.5, 4: 2.0 }; 
+        // Vitesse des mineurs (Tier 2 booste les mineurs)
+        const minerBonuses = { 1: 1.0, 2: 1.2, 3: 1.5, 4: 2.0 };
+
+        let minerSpeed = minerBonuses[state.tier];
+        let factorySpeed = factoryBonuses[state.tier];
 
         let solarProd = gridData.filter(c => c.build === 'solar').length * (15 * (isNight ? 0.3 : 1.0));
         let currentPower = solarProd;
@@ -201,10 +205,40 @@
         gridData.forEach((c, idx) => {
             if(!c.build) return;
             let canWork = false;
-            if(c.build === 'miner') { powerReq += 8; if(currentPower >= powerReq) { state.res[c.type] += speed; gains[c.type] += speed; canWork = true; } }
-            else if(c.build === 'glass_factory') { powerReq += 10; if(currentPower >= powerReq && state.res.quartz >= 1) { state.res.quartz -= 1; losses.quartz++; state.res.glass += speed; gains.glass += speed; canWork = true; } }
-            else if(c.build === 'motor_factory') { powerReq += 15; if(currentPower >= powerReq && state.res.iron >= 1 && state.res.copper >= 1) { state.res.iron -= 1; state.res.copper -= 1; losses.iron++; losses.copper++; state.res.motor += speed; gains.motor += speed; canWork = true; } }
-            else if(c.build === 'cable_factory') { powerReq += 8; if(currentPower >= powerReq && state.res.copper >= 1) { state.res.copper -= 1; losses.copper++; state.res.cable += speed; gains.cable += speed; canWork = true; } }
+            
+            if(c.build === 'miner') { 
+                powerReq += 8; 
+                if(currentPower >= powerReq) { 
+                    state.res[c.type] += minerSpeed; 
+                    gains[c.type] += minerSpeed; 
+                    canWork = true; 
+                } 
+            }
+            else if(c.build === 'glass_factory') { 
+                powerReq += 10; 
+                if(currentPower >= powerReq && state.res.quartz >= 1) { 
+                    state.res.quartz -= 1; losses.quartz++; 
+                    state.res.glass += factorySpeed; gains.glass += factorySpeed; 
+                    canWork = true; 
+                } 
+            }
+            else if(c.build === 'motor_factory') { 
+                powerReq += 15; 
+                if(currentPower >= powerReq && state.res.iron >= 1 && state.res.copper >= 1) { 
+                    state.res.iron -= 1; state.res.copper -= 1; 
+                    losses.iron++; losses.copper++; 
+                    state.res.motor += factorySpeed; gains.motor += factorySpeed; 
+                    canWork = true; 
+                } 
+            }
+            else if(c.build === 'cable_factory') { 
+                powerReq += 8; 
+                if(currentPower >= powerReq && state.res.copper >= 1) { 
+                    state.res.copper -= 1; losses.copper++; 
+                    state.res.cable += factorySpeed; gains.cable += factorySpeed; 
+                    canWork = true; 
+                } 
+            }
             if(['miner','glass_factory','motor_factory','cable_factory'].includes(c.build)) updateCellUI(idx, canWork ? null : '❌');
         });
 
