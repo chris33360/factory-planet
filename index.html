@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Factory Planet - Power Logic Restored</title>
+    <title>Factory Planet - Power Demand Focus</title>
     <style>
         :root { 
             --bg: #0f0f0f; --panel: #1a1a1a; --accent: #ff9800; 
@@ -67,7 +67,7 @@
         <div class="res-grid" id="res-display"></div>
         <div id="power-container">
             <div id="power-fill"></div>
-            <div id="power-text">STOCK: 0 / 0 | CONS: 0W | PROD: 0W</div>
+            <div id="power-text">STOCK: 0 / 0 | BESOIN: 0W | PROD: 0W</div>
         </div>
         <div id="time-display" style="font-size: 11px; text-align: center; margin-top: 5px;">☀️ JOUR</div>
     </div>
@@ -169,7 +169,6 @@
         document.getElementById('main-body').className = isNight ? 'night-mode' : '';
         document.getElementById('time-display').innerText = isNight ? '🌙 NUIT' : '☀️ JOUR';
 
-        // Énergie Production
         let prod = gridData.filter(c => c.build === 'solar').length * (isNight ? 2 : 15);
         gridData.filter(c => c.build === 'oil_gen').forEach(c => {
             if(state.res.oil >= 1) { state.res.oil -= 1; prod += 80; }
@@ -177,19 +176,17 @@
 
         state.maxEnergy = gridData.filter(c => c.build === 'battery_block').length * 10;
         
-        // Énergie Consommation
-        let cons = 0;
+        let need = 0; // Calcul du BESOIN (100%)
         gridData.forEach(c => {
             if(!c.build || Date.now() < c.deadUntil) return;
             const pMap = { miner:8, glass_factory:10, plastic_factory:12, cable_factory:8, motor_factory:15, battery_factory:20, robot_factory:40, rocket_factory:100 };
-            if(pMap[c.build]) cons += pMap[c.build];
+            if(pMap[c.build]) need += pMap[c.build];
         });
 
-        // Ratio de production (0 à 1)
         let totalAvailable = prod + state.energy;
-        let powerRatio = cons > 0 ? Math.min(1, totalAvailable / cons) : 1;
+        let powerRatio = need > 0 ? Math.min(1, totalAvailable / need) : 1;
 
-        state.energy = Math.max(0, Math.min(state.maxEnergy, state.energy + (prod - (cons * powerRatio))));
+        state.energy = Math.max(0, Math.min(state.maxEnergy, state.energy + (prod - (need * powerRatio))));
 
         const mult = {1:1, 2:1.5, 3:2.5, 4:5}[state.tier] * powerRatio;
         let diff = { iron: 0, copper: 0, quartz: 0, oil: 0, glass: 0, plastic: 0, cable: 0, motor: 0, battery: 0, robot: 0, rocket: 0 };
@@ -213,7 +210,6 @@
             }
         });
 
-        // Affichage HUD
         const resDiv = document.getElementById('res-display');
         resDiv.innerHTML = Object.entries(state.res).map(([k,v]) => {
             let d = diff[k];
@@ -222,7 +218,7 @@
         }).join('');
         
         document.getElementById('power-fill').style.width = (state.maxEnergy > 0 ? (state.energy/state.maxEnergy)*100 : 0) + '%';
-        document.getElementById('power-text').innerText = `STOCK: ${Math.floor(state.energy)}/${state.maxEnergy} | CONS: ${Math.floor(cons * powerRatio)}W | PROD: ${prod}W`;
+        document.getElementById('power-text').innerText = `STOCK: ${Math.floor(state.energy)}/${state.maxEnergy} | BESOIN: ${Math.floor(need)}W | PROD: ${prod}W`;
         updateTierUI();
     }, 1000);
 
