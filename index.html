@@ -3,128 +3,116 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Factory Planet - Meteor Hazard</title>
+    <title>Factory Planet - Limited Storage</title>
     <style>
         :root { 
             --bg: #0f0f0f; --panel: #1a1a1a; --accent: #ff9800; 
-            --iron: #3d3d3d; --copper: #5d2a1c; --quartz: #004d40;
-            --power: #4caf50; --danger: #f44336; 
+            --iron: #3d3d3d; --copper: #5d2a1c; --quartz: #004d40; --oil: #111;
+            --power: #4caf50; --danger: #f44336; --energy: #ffeb3b;
         }
         body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: white; margin: 0; overflow: hidden; display: flex; }
         
-        /* HUD & PANELS */
         #hud { position: fixed; top: 0; left: 120px; width: calc(100% - 270px); background: rgba(26,26,26,0.95); z-index: 100; padding: 6px; border-bottom: 1px solid #333; box-sizing: border-box; }
-        .res-grid { font-size: 9px; display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; }
-        .res-item { display: flex; align-items: center; gap: 3px; }
-        .flux { font-size: 8px; opacity: 0.7; }
-        .gain { color: var(--power); } .loss { color: var(--danger); }
+        .res-grid { font-size: 8px; display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; }
+        .res-item { display: flex; align-items: center; gap: 2px; }
         
-        #controls { width: 120px; height: 100vh; background: var(--panel); border-right: 1px solid #333; z-index: 101; padding: 10px; display: flex; flex-direction: column; gap: 6px; overflow-y: auto; flex-shrink: 0; }
+        #power-container { margin-top: 5px; background: #000; border: 1px solid #333; border-radius: 3px; height: 14px; position: relative; overflow: hidden; }
+        #power-fill { background: var(--energy); height: 100%; width: 0%; transition: width 0.3s; }
+        #power-text { position: absolute; width: 100%; text-align: center; font-size: 9px; top: 0; font-weight: bold; color: white; text-shadow: 1px 1px 2px black; }
+
+        #controls { width: 120px; height: 100vh; background: var(--panel); border-right: 1px solid #333; z-index: 101; padding: 10px; display: flex; flex-direction: column; gap: 5px; overflow-y: auto; flex-shrink: 0; }
         button.build-btn { background: #2a2a2a; color: white; border: 1px solid #444; padding: 6px; border-radius: 4px; font-size: 9px; cursor: pointer; text-align: left; }
+        button.build-btn span { display: block; font-size: 7px; color: #aaa; }
         button.active { border-color: var(--accent); background: #3d2a00; }
         
-        #tech-tree { width: 150px; height: 100vh; background: var(--panel); border-left: 1px solid #333; z-index: 101; padding: 10px; font-size: 10px; flex-shrink: 0; }
-
-        /* VIEWPORT & GRID */
-        #viewport { flex-grow: 1; height: 100vh; overflow: hidden; display: flex; align-items: center; justify-content: center; background: #080808; position: relative; }
+        #viewport { flex-grow: 1; height: 100vh; overflow: hidden; background: #080808; display: flex; align-items: center; justify-content: center; }
         #grid { display: grid; grid-template-columns: repeat(45, 35px); grid-template-rows: repeat(22, 35px); gap: 1px; }
         .cell { width: 35px; height: 35px; background: #141414; border: 1px solid #1f1f1f; display: flex; align-items: center; justify-content: center; font-size: 16px; position: relative; }
-        .cell.iron { background-color: var(--iron); }
-        .cell.copper { background-color: var(--copper); }
-        .cell.quartz { background-color: var(--quartz); }
-        
-        /* METEOR EFFECT */
-        .cell.impact { background-color: #f44336 !important; animation: shake 0.5s infinite; border: 1px solid yellow; }
-        @keyframes shake { 0% { transform: translate(1px, 1px); } 50% { transform: translate(-1px, -1px); } 100% { transform: translate(1px, 1px); } }
-        
-        #alert { position: fixed; top: 60px; left: 50%; transform: translateX(-50%); background: var(--danger); color: white; padding: 10px 20px; border-radius: 5px; font-weight: bold; z-index: 1000; display: none; }
+        .cell.oil { background: var(--oil); } .cell.iron { background: var(--iron); } .cell.copper { background: var(--copper); } .cell.quartz { background: var(--quartz); }
+        .cell.impact { background-color: #f44336 !important; animation: shake 0.2s infinite; }
+        @keyframes shake { 0% { transform: translate(1px); } 100% { transform: translate(-1px); } }
 
-        #power-bar { font-size: 9px; font-weight: bold; background: #000; padding: 3px; border-radius: 3px; margin-top: 5px; text-align: center; border: 1px solid #222; }
+        #alert { position: fixed; top: 60px; left: 50%; transform: translateX(-50%); background: var(--danger); color: white; padding: 10px 20px; border-radius: 5px; font-weight: bold; z-index: 1000; display: none; }
+        .night-mode #viewport { filter: brightness(0.5); }
     </style>
 </head>
 <body id="main-body">
 
-<div id="alert">⚠️ ALERTE : MÉTÉORE EN APPROCHE ! ⚠️</div>
+<div id="alert">⚠️ MÉTÉORE EN APPROCHE ! ⚠️</div>
 
 <div id="controls">
-    <h3 style="font-size: 10px; color:#888">🔨 Bâtir</h3>
-    <button class="build-btn" id="btn-miner" onclick="setMode('miner')">⛏️ Mineur <span>50 Fe</span></button>
-    <button class="build-btn" id="btn-solar" onclick="setMode('solar')">☀️ Solaire <span>40 Fe, 20 Cu</span></button>
-    <button class="build-btn" id="btn-glass_factory" onclick="setMode('glass_factory')">🏺 Verre <span>80 Fe, 40 Qz</span></button>
-    <button class="build-btn" id="btn-motor_factory" onclick="setMode('motor_factory')">⚙️ Moteur <span>120 Fe, 60 Cu</span></button>
-    <button class="build-btn" id="btn-cable_factory" onclick="setMode('cable_factory')">🔌 Câble <span>60 Fe, 40 Cu</span></button>
-    <button class="build-btn" id="btn-battery_factory" onclick="setMode('battery_factory')">🔋 Batterie <span>150 Fe, 50 Cu</span></button>
-    <button class="build-btn" id="btn-robot_factory" onclick="setMode('robot_factory')">🤖 Robot <span>200 Fe, 100 Gls</span></button>
-    <button class="build-btn" id="btn-rocket_factory" onclick="setMode('rocket_factory')">🚀 Fusée <span>500 Fe, 200 Mot</span></button>
+    <h3 style="font-size:9px; color:#888">ENERGIE</h3>
+    <button class="build-btn" id="btn-solar" onclick="setMode('solar')">☀️ Solaire <span>40Fe, 20Cu</span></button>
+    <button class="build-btn" id="btn-battery_block" onclick="setMode('battery_block')">🗄️ Stockage <span>50Fe, 20Bat</span></button>
+    
+    <h3 style="font-size:9px; color:#888">INDUSTRIE</h3>
+    <button class="build-btn" id="btn-miner" onclick="setMode('miner')">⛏️ Mineur <span>50Fe</span></button>
+    <button class="build-btn" id="btn-glass_factory" onclick="setMode('glass_factory')">🏺 Verre</button>
+    <button class="build-btn" id="btn-plastic_factory" onclick="setMode('plastic_factory')">🧪 Plastique</button>
+    <button class="build-btn" id="btn-cable_factory" onclick="setMode('cable_factory')">🔌 Câble</button>
+    <button class="build-btn" id="btn-motor_factory" onclick="setMode('motor_factory')">⚙️ Moteur</button>
+    <button class="build-btn" id="btn-battery_factory" onclick="setMode('battery_factory')">🔋 Batterie</button>
+    <button class="build-btn" id="btn-robot_factory" onclick="setMode('robot_factory')">🤖 Robot</button>
+    <button class="build-btn" id="btn-rocket_factory" onclick="setMode('rocket_factory')">🚀 Fusée</button>
     <button class="build-btn" id="btn-recycle" onclick="setMode('recycle')" style="color:var(--danger)">♻️ SUPPR</button>
 </div>
 
 <div id="hud">
     <div class="res-grid" id="res-display"></div>
-    <div id="power-bar">⚡ <span id="p-cons">0</span>W / <span id="p-prod">0</span>W</div>
+    <div id="power-container">
+        <div id="power-fill"></div>
+        <div id="power-text">CAPACITÉ: 0 / 0 | CONS: 0W | PROD: 0W</div>
+    </div>
+    <div id="time-info" style="font-size: 9px; text-align: center; margin-top: 2px; font-weight: bold;">☀️ JOUR</div>
 </div>
 
 <div id="viewport"><div id="grid"></div></div>
 
-<div id="tech-tree">
-    <h3 style="border-bottom: 1px solid #444">🚀 Tiers</h3>
-    <div id="tier-list"></div>
-</div>
-
 <script>
     let state = {
-        res: { iron: 500, copper: 200, quartz: 100, glass: 0, motor: 0, cable: 0, battery: 0, robot: 0, rocket: 0, oil: 0 },
-        tier: 1, mode: null, offset: { x: 0, y: 0 }, time: 0
+        res: { iron: 1000, copper: 500, quartz: 200, oil: 100, glass: 0, plastic: 0, cable: 0, motor: 0, battery: 0, robot: 0, rocket: 0 },
+        energyStored: 0, maxEnergy: 0, mode: null, offset: { x: 0, y: 0 }, time: 0
     };
 
-    const COLS = 45, ROWS = 22;
-    const COSTS = { 
-        miner: { iron: 50 }, solar: { iron: 40, copper: 20 },
-        glass_factory: { iron: 80, quartz: 40 }, motor_factory: { iron: 120, copper: 60 }, cable_factory: { iron: 60, copper: 40 },
-        battery_factory: { iron: 150, copper: 50 }, robot_factory: { iron: 200, glass: 100 }, rocket_factory: { iron: 500, motor: 200 }
+    const COSTS = {
+        solar: { iron: 40, copper: 20 },
+        battery_block: { iron: 50, battery: 20 },
+        miner: { iron: 50 }, glass_factory: { iron: 80, quartz: 40 },
+        plastic_factory: { iron: 100 }, motor_factory: { iron: 120, copper: 60 },
+        cable_factory: { iron: 60, copper: 40 }, battery_factory: { iron: 150, copper: 50 },
+        robot_factory: { motor: 30, cable: 50, plastic: 20 }, rocket_factory: { iron: 500, motor: 100, robot: 10 }
     };
 
     let gridData = [];
+    const COLS = 45, ROWS = 22;
 
     function init() {
         const gridEl = document.getElementById('grid');
         for (let i = 0; i < COLS * ROWS; i++) {
             let r = Math.random();
-            let type = (r > 0.96) ? 'quartz' : (r > 0.92) ? 'copper' : (r > 0.88) ? 'iron' : 'empty';
+            let type = (r > 0.98) ? 'oil' : (r > 0.96) ? 'quartz' : (r > 0.93) ? 'copper' : (r > 0.88) ? 'iron' : 'empty';
             gridData.push({ id: i, type, build: null, deadUntil: 0 });
             let cell = document.createElement('div');
             cell.className = `cell ${type}`; cell.id = 'c-' + i;
             cell.onclick = () => handleCellClick(i);
             gridEl.appendChild(cell);
         }
-        setInterval(spawnMeteor, 120000); // Météore toutes les 2 minutes
+        setInterval(spawnMeteor, 120000);
     }
 
     function spawnMeteor() {
         document.getElementById('alert').style.display = 'block';
         setTimeout(() => {
             document.getElementById('alert').style.display = 'none';
-            const centerIdx = Math.floor(Math.random() * (COLS * ROWS));
-            const count = Math.floor(Math.random() * 3) + 1; // 1 à 3 cases
-            
-            let targets = [centerIdx];
-            // Ajouter des voisins aléatoires
-            for(let i=0; i < count-1; i++) {
-                targets.push(centerIdx + (Math.random() > 0.5 ? 1 : -1) * (Math.random() > 0.5 ? 1 : COLS));
-            }
-
-            targets.forEach(idx => {
-                if(gridData[idx]) {
-                    gridData[idx].build = null; // Destruction !
-                    gridData[idx].deadUntil = Date.now() + 30000; // 30 secondes
-                    updateCellUI(idx);
-                }
+            const center = Math.floor(Math.random() * (COLS * ROWS));
+            [center, center+1, center+COLS].forEach(idx => {
+                if(gridData[idx]) { gridData[idx].build = null; gridData[idx].deadUntil = Date.now() + 30000; updateCellUI(idx); }
             });
         }, 3000);
     }
 
     function handleCellClick(i) {
-        if(Date.now() < gridData[i].deadUntil) return; // Case morte
+        if(Date.now() < gridData[i].deadUntil) return;
         let cell = gridData[i];
         if (state.mode === 'recycle' && cell.build) { cell.build = null; updateCellUI(i); return; }
         if (cell.build || !state.mode) return;
@@ -140,43 +128,59 @@
         const isDead = Date.now() < c.deadUntil;
         el.className = `cell ${c.type} ${isDead ? 'impact' : ''}`;
         if (c.build) {
-            const icons = { miner: '⛏️', solar: '☀️', glass_factory: '🏺', motor_factory: '⚙️', cable_factory: '🔌', battery_factory: '🔋', robot_factory: '🤖', rocket_factory: '🚀' };
+            const icons = { solar: '☀️', battery_block: '🗄️', miner: '⛏️', glass_factory: '🏺', plastic_factory: '🧪', motor_factory: '⚙️', cable_factory: '🔌', battery_factory: '🔋', robot_factory: '🤖', rocket_factory: '🚀' };
             el.innerHTML = icons[c.build];
         } else el.innerHTML = isDead ? '🔥' : "";
     }
 
-    // Boucle de prod (simplifiée pour l'espace)
+    function setMode(m) {
+        state.mode = (state.mode === m) ? null : m;
+        document.querySelectorAll('.build-btn').forEach(b => b.classList.remove('active'));
+        if(state.mode) document.getElementById('btn-' + m).classList.add('active');
+    }
+
     setInterval(() => {
-        let curPower = gridData.filter(c => c.build === 'solar').length * 15;
-        let powerReq = 0;
+        state.time = (state.time + 1) % 60;
+        const isNight = state.time >= 30;
+        document.getElementById('main-body').className = isNight ? 'night-mode' : '';
+        document.getElementById('time-info').innerHTML = isNight ? '🌙 NUIT' : '☀️ JOUR';
+
+        let prod = gridData.filter(c => c.build === 'solar').length * (isNight ? 2 : 15);
+        let storageCount = gridData.filter(c => c.build === 'battery_block').length;
+        state.maxEnergy = storageCount * 10; // CAPACITÉ RÉDUITE À 10 PAR BLOC
         
-        gridData.forEach((c, idx) => {
-            if(Date.now() < c.deadUntil) { updateCellUI(idx); return; }
-            if(!c.build) return;
-            // Logique de consommation (Fer=2, Cu=1, Cab=1 -> Bat) etc...
-            // [Code de production identique au précédent...]
-            if(c.build === 'miner') { powerReq += 8; if(curPower >= powerReq) state.res[c.type] += 1; }
-            // Simulation rapide des usines pour l'exemple
-            if(c.build.includes('factory')) powerReq += 20;
+        let cons = 0;
+        gridData.forEach(c => {
+            if(!c.build || Date.now() < c.deadUntil) return;
+            const pMap = { miner:8, glass_factory:10, plastic_factory:12, cable_factory:8, motor_factory:15, battery_factory:20, robot_factory:40, rocket_factory:100 };
+            if(pMap[c.build]) cons += pMap[c.build];
         });
 
-        // Update HUD
+        let balance = prod - cons;
+        state.energyStored = Math.max(0, Math.min(state.maxEnergy, state.energyStored + balance));
+
+        if((balance >= 0) || (state.energyStored > 0)) {
+            gridData.forEach(c => {
+                if(!c.build || Date.now() < c.deadUntil) return;
+                if(c.build === 'miner') state.res[c.type] += 1;
+                if(c.build === 'glass_factory' && state.res.quartz >= 1) { state.res.quartz--; state.res.glass++; }
+                if(c.build === 'plastic_factory' && state.res.oil >= 1) { state.res.oil--; state.res.plastic++; }
+                if(c.build === 'motor_factory' && state.res.iron >= 1 && state.res.copper >= 1) { state.res.iron--; state.res.copper--; state.res.motor++; }
+                if(c.build === 'cable_factory' && state.res.copper >= 1) { state.res.copper--; state.res.cable++; }
+                if(c.build === 'battery_factory' && state.res.iron >= 2 && state.res.copper >= 1 && state.res.cable >= 1) { state.res.iron-=2; state.res.copper--; state.res.cable--; state.res.battery++; }
+                if(c.build === 'robot_factory' && state.res.motor >= 3 && state.res.cable >= 5 && state.res.plastic >= 2) { state.res.motor-=3; state.res.cable-=5; state.res.plastic-=2; state.res.robot++; }
+                if(c.build === 'rocket_factory' && state.res.battery >= 3 && state.res.motor >= 3 && state.res.robot >= 2) { state.res.battery-=3; state.res.motor-=3; state.res.robot-=2; state.res.rocket++; }
+            });
+        }
+
         const resDiv = document.getElementById('res-display');
-        resDiv.innerHTML = Object.entries(state.res).map(([k,v]) => `<div class="res-item">${k.slice(0,2)}: ${Math.floor(v)}</div>`).join('');
-        document.getElementById('p-cons').innerText = powerReq;
-        document.getElementById('p-prod').innerText = curPower;
+        resDiv.innerHTML = Object.entries(state.res).map(([k,v]) => `<div class="res-item">${k.toUpperCase().slice(0,3)}:${Math.floor(v)}</div>`).join('');
+        
+        let perc = state.maxEnergy > 0 ? (state.energyStored / state.maxEnergy) * 100 : 0;
+        document.getElementById('power-fill').style.width = perc + '%';
+        document.getElementById('power-text').innerText = `STOCK: ${Math.floor(state.energyStored)} / ${state.maxEnergy} | CONS: ${cons}W | PROD: ${prod}W`;
     }, 1000);
 
-    // Camera drag
-    let isDragging = false, lastMouse = { x: 0, y: 0 };
-    window.onpointerdown = (e) => { if(e.target.id === 'viewport' || e.target.className.includes('cell')) isDragging = true; lastMouse = { x: e.clientX, y: e.clientY }; };
-    window.onpointerup = () => isDragging = false;
-    window.onpointermove = (e) => {
-        if (!isDragging) return;
-        state.offset.x += e.clientX - lastMouse.x; state.offset.y += e.clientY - lastMouse.y;
-        document.getElementById('grid').style.transform = `translate(${state.offset.x}px, ${state.offset.y}px)`;
-        lastMouse = { x: e.clientX, y: e.clientY };
-    };
     init();
 </script>
 </body>
