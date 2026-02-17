@@ -1,252 +1,817 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Factory Planet - Shield Update</title>
-    <style>
-        :root { 
-            --bg: #0f0f0f; --panel: #1a1a1a; --accent: #ff9800; 
-            --iron: #3d3d3d; --copper: #5d2a1c; --quartz: #004d40; --oil: #111;
-            --power: #4caf50; --danger: #f44336; --energy: #2196F3; --shield: #00e5ff;
-        }
-        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: white; margin: 0; overflow: hidden; display: flex; height: 100vh; }
-        #left-panel { width: 140px; background: var(--panel); border-right: 1px solid #333; display: flex; flex-direction: column; gap: 5px; padding: 10px; overflow-y: auto; flex-shrink: 0; }
-        #game-area { flex-grow: 1; position: relative; display: flex; flex-direction: column; overflow: hidden; }
-        #right-panel { width: 180px; background: var(--panel); border-left: 1px solid #333; padding: 10px; overflow-y: auto; flex-shrink: 0; }
-        #hud { background: rgba(0,0,0,0.9); padding: 8px; border-bottom: 1px solid #333; }
-        .res-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; font-size: 10px; margin-bottom: 8px; }
-        .res-item { background: #222; padding: 2px 4px; border-radius: 2px; border: 1px solid #333; display: flex; justify-content: space-between; }
-        #power-row { display: flex; align-items: center; gap: 15px; font-size: 11px; font-weight: bold; }
-        #power-container { background: #000; border: 1px solid #333; height: 16px; width: 200px; position: relative; border-radius: 3px; overflow: hidden; }
-        #power-fill { background: var(--energy); height: 100%; width: 0%; transition: width 0.3s; }
-        #power-text { position: absolute; width: 100%; text-align: center; font-size: 9px; top: 1px; color: white; text-shadow: 1px 1px black; }
-        .prod-stat { font-size: 8px; font-weight: bold; margin-left: 4px; }
-        .plus { color: #4caf50; } .minus { color: #f44336; }
-        #viewport { flex-grow: 1; overflow: auto; display: flex; align-items: center; justify-content: center; background: #080808; padding: 20px; }
-        #grid { display: grid; grid-template-columns: repeat(45, 35px); grid-template-rows: repeat(22, 35px); gap: 1px; }
-        .cell { width: 35px; height: 35px; background: #141414; border: 1px solid #1f1f1f; display: flex; align-items: center; justify-content: center; font-size: 16px; cursor: pointer; position: relative; }
-        .cell.iron { background: var(--iron); } .cell.copper { background: var(--copper); } 
-        .cell.quartz { background: var(--quartz); } .cell.oil { background: var(--oil); }
-        .cell.impact { background-color: var(--danger) !important; animation: shake 0.2s infinite; }
-        .cell.shielded { border: 1px solid var(--shield); box-shadow: inset 0 0 5px var(--shield); }
-        .build-btn { background: #2a2a2a; color: white; border: 1px solid #444; padding: 6px; border-radius: 4px; font-size: 10px; cursor: pointer; text-align: left; }
-        .build-btn span { display: block; font-size: 8px; color: #888; }
-        .build-btn.active { border-color: var(--accent); background: #3d2a00; }
-        .tech-item { background: #222; border: 1px solid #444; padding: 10px; border-radius: 6px; margin-bottom: 12px; font-size: 11px; }
-        .tech-item.current { border: 1px solid var(--accent); background: #2a2010; }
-        .tech-btn { width: 100%; background: var(--accent); border: none; padding: 6px; margin-top: 8px; font-weight: bold; cursor: pointer; border-radius: 3px; }
-        @keyframes shake { 0% { transform: translate(1px); } 100% { transform: translate(-1px); } }
-        #alert { position: fixed; top: 100px; left: 50%; transform: translateX(-50%); background: var(--danger); color: white; padding: 15px; z-index: 1000; display: none; font-weight: bold; border-radius: 5px; }
-        .night-mode #viewport { filter: brightness(0.4); }
-    </style>
+  <meta charset="UTF-8" />
+  <title>Dynasties Duel - IA 3 niveaux</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: system-ui, sans-serif;
+      background: #020617;
+      color: #e5e7eb;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
+
+    header {
+      padding: 10px 16px;
+      background: #020617;
+      border-bottom: 1px solid #1f2937;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 14px;
+      gap: 12px;
+    }
+
+    #difficultySelect {
+      background: #111827;
+      color: #e5e7eb;
+      border-radius: 999px;
+      border: 1px solid #374151;
+      padding: 4px 8px;
+      font-size: 12px;
+    }
+
+    #game {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 8px;
+      box-sizing: border-box;
+    }
+
+    #board {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 8px;
+      width: 100%;
+      max-width: 480px;
+      margin-top: 8px;
+    }
+
+    .row {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .card {
+      width: 70px;
+      height: 100px;
+      border-radius: 8px;
+      border: 1px solid #4b5563;
+      background: #111827;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 4px;
+      box-sizing: border-box;
+      font-size: 10px;
+      cursor: pointer;
+      position: relative;
+      transition: transform 0.1s, box-shadow 0.1s, border-color 0.1s;
+    }
+
+    .card.blocked {
+      opacity: 0.3;
+      cursor: default;
+    }
+
+    .card.selected {
+      border-color: #facc15;
+      box-shadow: 0 0 0 2px rgba(250, 204, 21, 0.4);
+      transform: translateY(-2px);
+    }
+
+    .card-type {
+      font-weight: bold;
+      font-size: 9px;
+      text-transform: uppercase;
+    }
+
+    .card-name {
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    .card-cost,
+    .card-effect {
+      font-size: 9px;
+      color: #9ca3af;
+    }
+
+    #panels {
+      width: 100%;
+      max-width: 480px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 4px;
+    }
+
+    .playerPanel {
+      padding: 8px;
+      box-sizing: border-box;
+      border-top: 1px solid #1f2937;
+      background: #020617;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      font-size: 11px;
+    }
+
+    .panelHeader {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .panelHeader span.role {
+      font-size: 11px;
+      color: #9ca3af;
+    }
+
+    .resources {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      font-size: 11px;
+    }
+
+    .resources div {
+      min-width: 80px;
+    }
+
+    #actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    button {
+      flex: 1;
+      padding: 8px;
+      border-radius: 999px;
+      border: none;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      background: #1d4ed8;
+      color: white;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 4px;
+    }
+
+    button.secondary {
+      background: #374151;
+    }
+
+    button:disabled {
+      opacity: 0.4;
+      cursor: default;
+    }
+
+    #log {
+      font-size: 11px;
+      color: #9ca3af;
+      max-height: 80px;
+      overflow-y: auto;
+      border-top: 1px solid #1f2937;
+      padding-top: 4px;
+    }
+
+    #cardDetails {
+      font-size: 11px;
+      color: #e5e7eb;
+      min-height: 32px;
+    }
+
+    #turnInfo {
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .militaryTrack {
+      width: 100%;
+      max-width: 480px;
+      margin-top: 4px;
+      font-size: 10px;
+      color: #9ca3af;
+    }
+
+    .militaryBar {
+      height: 6px;
+      background: #111827;
+      border-radius: 999px;
+      overflow: hidden;
+      margin-top: 2px;
+    }
+
+    .militaryMarker {
+      height: 100%;
+      width: 50%;
+      background: linear-gradient(90deg, #22c55e, #ef4444);
+      transform-origin: left center;
+      transition: transform 0.2s;
+    }
+  </style>
 </head>
-<body id="main-body">
-
-<div id="alert">⚠️ MÉTÉORE EN APPROCHE ! ⚠️</div>
-
-<div id="left-panel">
-    <h3 style="font-size:11px; color:var(--accent);">🔨 ÉNERGIE</h3>
-    <button class="build-btn" id="btn-solar" onclick="setMode('solar')">☀️ Solaire <span>40Fe, 20Cu</span></button>
-    <button class="build-btn" id="btn-oil_gen" onclick="setMode('oil_gen')">🔥 Générateur <span>150Fe, 50Gls</span></button>
-    <button class="build-btn" id="btn-battery_block" onclick="setMode('battery_block')">🗄️ Stockage (30) <span>50Fe, 20Bat</span></button>
-    <button class="build-btn" id="btn-shield_tower" onclick="setMode('shield_tower')" style="border-color: var(--shield);">🛡️ Tour Anti-M <span>200Fe, 100Cab, 50Mot</span></button>
-    
-    <h3 style="font-size:11px; color:var(--accent); margin-top:10px;">🏭 USINES</h3>
-    <button class="build-btn" id="btn-miner" onclick="setMode('miner')">⛏️ Mineur <span>50Fe</span></button>
-    <button class="build-btn" id="btn-glass_factory" onclick="setMode('glass_factory')">🏺 Verre <span>80Fe, 40Qz</span></button>
-    <button class="build-btn" id="btn-plastic_factory" onclick="setMode('plastic_factory')">🧪 Plastique <span>100Fe, 50Oil</span></button>
-    <button class="build-btn" id="btn-cable_factory" onclick="setMode('cable_factory')">🔌 Câble <span>60Fe, 40Cu</span></button>
-    <button class="build-btn" id="btn-motor_factory" onclick="setMode('motor_factory')">⚙️ Moteur <span>120Fe, 60Cu</span></button>
-    <button class="build-btn" id="btn-battery_factory" onclick="setMode('battery_factory')">🔋 Batterie <span>150Fe, 50Cu</span></button>
-    <button class="build-btn" id="btn-robot_factory" onclick="setMode('robot_factory')">🤖 Robot <span>Mot+Cab+Pla</span></button>
-    <button class="build-btn" id="btn-rocket_factory" onclick="setMode('rocket_factory')">🚀 Fusée <span>Bat+Mot+Rob</span></button>
-    <button class="build-btn" onclick="setMode('recycle')" id="btn-recycle" style="color:var(--danger); margin-top:10px;">♻️ DÉMOLIR</button>
-</div>
-
-<div id="game-area">
-    <div id="hud">
-        <div class="res-grid" id="res-display"></div>
-        <div id="power-row">
-            <div id="time-display">☀️ JOUR</div>
-            <div id="power-container">
-                <div id="power-fill"></div>
-                <div id="power-text">STOCK: 0 / 0</div>
-            </div>
-            <div id="power-stats">PROD: 0W | BESOIN: 0W</div>
-        </div>
+<body>
+  <header>
+    <div>Dynasties Duel — Prototype Âge I</div>
+    <div style="display:flex;align-items:center;gap:6px;">
+      <label for="difficultySelect" style="font-size:12px;">IA :</label>
+      <select id="difficultySelect">
+        <option value="easy">Facile</option>
+        <option value="normal" selected>Normal</option>
+        <option value="hard">Expert</option>
+      </select>
     </div>
-    <div id="viewport"><div id="grid"></div></div>
-</div>
+    <div id="turnInfo">Tour du joueur</div>
+  </header>
 
-<div id="right-panel">
-    <h3 style="font-size:11px; color:var(--accent);">🚀 TIERS</h3>
-    <div id="tier-list"></div>
-</div>
+  <div id="game">
+    <div id="board"></div>
 
-<script>
-    let state = {
-        res: { iron: 1000, copper: 500, quartz: 200, oil: 100, glass: 0, plastic: 0, cable: 0, motor: 0, battery: 0, robot: 0, rocket: 0 },
-        energy: 0, maxEnergy: 0, tier: 1, mode: null, time: 0
+    <div class="militaryTrack">
+      Piste militaire (Joueur ← 0 → IA)
+      <div class="militaryBar">
+        <div id="militaryMarker" class="militaryMarker"></div>
+      </div>
+    </div>
+
+    <div id="panels">
+      <div class="playerPanel" id="humanPanel">
+        <div class="panelHeader">
+          <div>Joueur</div>
+          <span class="role">Humain</span>
+        </div>
+        <div id="humanResources" class="resources"></div>
+        <div id="cardDetails">Sélectionne une carte accessible.</div>
+        <div id="actions">
+          <button id="buildBtn" disabled>Construire</button>
+          <button id="discardBtn" class="secondary" disabled>Défausser (+2 or)</button>
+        </div>
+      </div>
+
+      <div class="playerPanel" id="aiPanel">
+        <div class="panelHeader">
+          <div>Adversaire</div>
+          <span class="role">IA</span>
+        </div>
+        <div id="aiResources" class="resources"></div>
+        <div id="log"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // --- Données de base ---
+
+    const cardsAge1 = [
+      // Ligne du bas (3 cartes)
+      {
+        id: "wood_camp",
+        name: "Camp de bois",
+        age: 1,
+        type: "ressource",
+        cost: { gold: 0 },
+        effect: { wood: 1 }
+      },
+      {
+        id: "clay_pit",
+        name: "Fosse d'argile",
+        age: 1,
+        type: "ressource",
+        cost: { gold: 0 },
+        effect: { clay: 1 }
+      },
+      {
+        id: "stone_quarry",
+        name: "Carrière",
+        age: 1,
+        type: "ressource",
+        cost: { gold: 0 },
+        effect: { stone: 1 }
+      },
+
+      // Ligne du milieu (2 cartes)
+      {
+        id: "barracks",
+        name: "Caserne",
+        age: 1,
+        type: "militaire",
+        cost: { clay: 1 },
+        effect: { military: 1 }
+      },
+      {
+        id: "library",
+        name: "Bibliothèque",
+        age: 1,
+        type: "science",
+        cost: { wood: 1 },
+        effect: { science: "compas" }
+      },
+
+      // Ligne du haut (1 carte)
+      {
+        id: "temple",
+        name: "Temple",
+        age: 1,
+        type: "civique",
+        cost: { stone: 1 },
+        effect: { victory: 3 }
+      }
+    ];
+
+    const pyramidLayout = [
+      [5],
+      [3, 4],
+      [0, 1, 2]
+    ];
+
+    // --- État du jeu ---
+
+    const human = {
+      name: "Joueur",
+      gold: 6,
+      wood: 0,
+      clay: 0,
+      stone: 0,
+      military: 0,
+      science: [],
+      victory: 0
     };
 
-    const COSTS = {
-        solar: { iron: 40, copper: 20 }, oil_gen: { iron: 150, glass: 50 }, battery_block: { iron: 50, battery: 20 },
-        shield_tower: { iron: 200, cable: 100, motor: 50 },
-        miner: { iron: 50 }, glass_factory: { iron: 80, quartz: 40 }, plastic_factory: { iron: 100 },
-        cable_factory: { iron: 60, copper: 40 }, motor_factory: { iron: 120, copper: 60 },
-        battery_factory: { iron: 150, copper: 50 }, robot_factory: { motor: 10 }, rocket_factory: { iron: 500 }
+    const ai = {
+      name: "IA",
+      gold: 6,
+      wood: 0,
+      clay: 0,
+      stone: 0,
+      military: 0,
+      science: [],
+      victory: 0,
+      strategy: "balanced" // "military", "science", "balanced"
     };
 
-    let gridData = [];
-    const COLS = 45, ROWS = 22;
+    const gameState = {
+      currentPlayer: "human", // "human" ou "ai"
+      difficulty: "normal",
+      militaryTrack: 0, // -6 (IA gagne) à +6 (Humain gagne)
+      finished: false
+    };
+
+    const boardState = {
+      cards: cardsAge1.map((card, index) => ({
+        index,
+        taken: false
+      }))
+    };
+
+    let selectedCardIndex = null;
+
+    // --- Utilitaires généraux ---
+
+    function log(message) {
+      const logDiv = document.getElementById("log");
+      const line = document.createElement("div");
+      line.textContent = message;
+      logDiv.prepend(line);
+    }
+
+    function canAfford(player, cost) {
+      if (!cost) return true;
+      if (cost.gold && player.gold < cost.gold) return false;
+      if (cost.wood && player.wood < cost.wood) return false;
+      if (cost.clay && player.clay < cost.clay) return false;
+      if (cost.stone && player.stone < cost.stone) return false;
+      return true;
+    }
+
+    function payCost(player, cost) {
+      if (!cost) return;
+      if (cost.gold) player.gold -= cost.gold;
+      if (cost.wood) player.wood -= cost.wood;
+      if (cost.clay) player.clay -= cost.clay;
+      if (cost.stone) player.stone -= cost.stone;
+    }
+
+    function applyEffect(player, effect) {
+      if (!effect) return;
+      if (effect.gold) player.gold += effect.gold;
+      if (effect.wood) player.wood += effect.wood;
+      if (effect.clay) player.clay += effect.clay;
+      if (effect.stone) player.stone += effect.stone;
+      if (effect.military) {
+        player.military += effect.military;
+        if (player === human) {
+          gameState.militaryTrack += effect.military;
+        } else {
+          gameState.militaryTrack -= effect.military;
+        }
+        updateMilitaryUI();
+        checkMilitaryVictory();
+      }
+      if (effect.victory) player.victory += effect.victory;
+      if (effect.science) player.science.push(effect.science);
+    }
+
+    function formatCost(cost) {
+      if (!cost) return "0";
+      const parts = [];
+      if (cost.gold) parts.push(cost.gold + " or");
+      if (cost.wood) parts.push(cost.wood + " bois");
+      if (cost.clay) parts.push(cost.clay + " argile");
+      if (cost.stone) parts.push(cost.stone + " pierre");
+      return parts.join(", ") || "0";
+    }
+
+    function formatEffect(effect) {
+      if (!effect) return "—";
+      const parts = [];
+      if (effect.gold) parts.push("+" + effect.gold + " or");
+      if (effect.wood) parts.push("+" + effect.wood + " bois");
+      if (effect.clay) parts.push("+" + effect.clay + " argile");
+      if (effect.stone) parts.push("+" + effect.stone + " pierre");
+      if (effect.military) parts.push("+" + effect.military + " militaire");
+      if (effect.victory) parts.push("+" + effect.victory + " PV");
+      if (effect.science) parts.push("science: " + effect.science);
+      return parts.join(", ") || "—";
+    }
+
+    function isCardBlocked(rowIndex, colIndex) {
+      if (rowIndex === 0) return false;
+      const aboveRow = pyramidLayout[rowIndex - 1];
+      const currentRow = pyramidLayout[rowIndex];
+
+      let blockers = [];
+      if (rowIndex === 2) {
+        if (colIndex === 0) blockers = [aboveRow[0]];
+        if (colIndex === 1) blockers = [aboveRow[0], aboveRow[1]];
+        if (colIndex === 2) blockers = [aboveRow[1]];
+      } else if (rowIndex === 1) {
+        if (colIndex === 0) blockers = [aboveRow[0]];
+        if (colIndex === 1) blockers = [aboveRow[0]];
+      }
+
+      for (const idx of blockers) {
+        const state = boardState.cards[idx];
+        if (!state.taken) return true;
+      }
+      return false;
+    }
+
+    function getAccessibleCards() {
+      const result = [];
+      pyramidLayout.forEach((row, rowIndex) => {
+        row.forEach((cardIndex, colIndex) => {
+          const state = boardState.cards[cardIndex];
+          if (state.taken) return;
+          const blocked = isCardBlocked(rowIndex, colIndex);
+          if (!blocked) {
+            result.push(cardsAge1[cardIndex]);
+          }
+        });
+      });
+      return result;
+    }
+
+    // --- UI ---
+
+    function updateResourcesUI() {
+      const humanDiv = document.getElementById("humanResources");
+      humanDiv.innerHTML = `
+        <div><strong>Or :</strong> ${human.gold}</div>
+        <div><strong>Bois :</strong> ${human.wood}</div>
+        <div><strong>Argile :</strong> ${human.clay}</div>
+        <div><strong>Pierre :</strong> ${human.stone}</div>
+        <div><strong>Militaire :</strong> ${human.military}</div>
+        <div><strong>Victoire :</strong> ${human.victory}</div>
+      `;
+
+      const aiDiv = document.getElementById("aiResources");
+      aiDiv.innerHTML = `
+        <div><strong>Or :</strong> ${ai.gold}</div>
+        <div><strong>Bois :</strong> ${ai.wood}</div>
+        <div><strong>Argile :</strong> ${ai.clay}</div>
+        <div><strong>Pierre :</strong> ${ai.stone}</div>
+        <div><strong>Militaire :</strong> ${ai.military}</div>
+        <div><strong>Victoire :</strong> ${ai.victory}</div>
+      `;
+    }
+
+    function updateMilitaryUI() {
+      const marker = document.getElementById("militaryMarker");
+      // gameState.militaryTrack va de -6 à +6
+      const t = (gameState.militaryTrack + 6) / 12; // 0 à 1
+      marker.style.transform = `scaleX(${t})`;
+    }
+
+    function updateTurnInfo() {
+      const turnInfo = document.getElementById("turnInfo");
+      if (gameState.finished) {
+        turnInfo.textContent = "Partie terminée";
+      } else if (gameState.currentPlayer === "human") {
+        turnInfo.textContent = "Tour du joueur";
+      } else {
+        turnInfo.textContent = "Tour de l'IA";
+      }
+    }
+
+    function renderBoard() {
+      const boardDiv = document.getElementById("board");
+      boardDiv.innerHTML = "";
+
+      pyramidLayout.forEach((row, rowIndex) => {
+        const rowDiv = document.createElement("div");
+        rowDiv.className = "row";
+
+        row.forEach((cardIndex, colIndex) => {
+          const cardData = cardsAge1[cardIndex];
+          const state = boardState.cards[cardIndex];
+
+          const cardDiv = document.createElement("div");
+          cardDiv.className = "card";
+
+          if (state.taken) {
+            cardDiv.style.visibility = "hidden";
+          } else {
+            const blocked = isCardBlocked(rowIndex, colIndex);
+            if (blocked) cardDiv.classList.add("blocked");
+
+            cardDiv.dataset.index = cardIndex;
+
+            const typeDiv = document.createElement("div");
+            typeDiv.className = "card-type";
+            typeDiv.textContent = cardData.type;
+
+            const nameDiv = document.createElement("div");
+            nameDiv.className = "card-name";
+            nameDiv.textContent = cardData.name;
+
+            const costDiv = document.createElement("div");
+            costDiv.className = "card-cost";
+            costDiv.textContent = "Coût: " + formatCost(cardData.cost);
+
+            const effectDiv = document.createElement("div");
+            effectDiv.className = "card-effect";
+            effectDiv.textContent = "Effet: " + formatEffect(cardData.effect);
+
+            cardDiv.appendChild(typeDiv);
+            cardDiv.appendChild(nameDiv);
+            cardDiv.appendChild(costDiv);
+            cardDiv.appendChild(effectDiv);
+
+            cardDiv.addEventListener("click", () => {
+              if (gameState.currentPlayer !== "human") return;
+              if (blocked) return;
+              selectCard(cardIndex);
+            });
+
+            if (selectedCardIndex === cardIndex) {
+              cardDiv.classList.add("selected");
+            }
+          }
+
+          rowDiv.appendChild(cardDiv);
+        });
+
+        boardDiv.appendChild(rowDiv);
+      });
+    }
+
+    function selectCard(index) {
+      selectedCardIndex = index;
+      const card = cardsAge1[index];
+      const detailsDiv = document.getElementById("cardDetails");
+      detailsDiv.textContent =
+        `${card.name} — Type: ${card.type} — Coût: ${formatCost(card.cost)} — Effet: ${formatEffect(card.effect)}`;
+
+      const canBuild = canAfford(human, card.cost);
+      document.getElementById("buildBtn").disabled = !canBuild || gameState.finished;
+      document.getElementById("discardBtn").disabled = gameState.finished;
+
+      renderBoard();
+    }
+
+    // --- Fin de partie ---
+
+    function checkEndOfBoard() {
+      const remaining = boardState.cards.some(c => !c.taken);
+      if (!remaining && !gameState.finished) {
+        // Fin de l'âge I -> on calcule un vainqueur simple
+        let winner = null;
+        const humanScore = human.victory + human.military + human.science.length;
+        const aiScore = ai.victory + ai.military + ai.science.length;
+
+        if (humanScore > aiScore) winner = "Humain";
+        else if (aiScore > humanScore) winner = "IA";
+        else winner = "Égalité";
+
+        log(`Fin de l'âge I. Score Joueur: ${humanScore}, IA: ${aiScore}. Résultat: ${winner}.`);
+        gameState.finished = true;
+        updateTurnInfo();
+        document.getElementById("buildBtn").disabled = true;
+        document.getElementById("discardBtn").disabled = true;
+      }
+    }
+
+    function checkMilitaryVictory() {
+      if (gameState.militaryTrack >= 6 && !gameState.finished) {
+        log("Victoire militaire du Joueur !");
+        gameState.finished = true;
+        updateTurnInfo();
+      } else if (gameState.militaryTrack <= -6 && !gameState.finished) {
+        log("Victoire militaire de l'IA !");
+        gameState.finished = true;
+        updateTurnInfo();
+      }
+    }
+
+    // --- IA ---
+
+    function setDifficulty(diff) {
+      gameState.difficulty = diff;
+      if (diff === "easy") {
+        ai.strategy = "balanced";
+      } else if (diff === "normal") {
+        ai.strategy = "military";
+      } else {
+        ai.strategy = "science";
+      }
+    }
+
+    function evaluateCardForAI(card) {
+      let score = 0;
+
+      // Valeur de base
+      if (card.type === "ressource") score += 2;
+      if (card.type === "militaire") score += 3;
+      if (card.type === "science") score += 4;
+      if (card.type === "civique") score += (card.effect.victory || 1);
+
+      // Stratégie
+      if (ai.strategy === "military" && card.type === "militaire") score += 3;
+      if (ai.strategy === "science" && card.type === "science") score += 3;
+
+      // Danger pour le joueur (un peu de “blocage”)
+      if (card.type === "science") score += 1;
+      if (card.type === "militaire") score += 1;
+
+      // Coût
+      if (!canAfford(ai, card.cost)) score -= 1000;
+
+      // Ajustement selon difficulté
+      if (gameState.difficulty === "easy") {
+        // IA un peu plus bête : bruit aléatoire
+        score += (Math.random() * 2 - 1); // -1 à +1
+      } else if (gameState.difficulty === "hard") {
+        // IA plus “fine” : bonus si carte utile au joueur
+        if (card.type === "science" || card.type === "militaire") {
+          score += 2;
+        }
+      }
+
+      return score;
+    }
+
+    function aiChooseCard() {
+      const accessible = getAccessibleCards();
+      if (accessible.length === 0) return null;
+
+      let bestCard = null;
+      let bestScore = -Infinity;
+
+      for (const card of accessible) {
+        const score = evaluateCardForAI(card);
+        if (score > bestScore) {
+          bestScore = score;
+          bestCard = card;
+        }
+      }
+
+      return bestCard;
+    }
+
+    function aiPlayTurn() {
+      if (gameState.finished) return;
+
+      updateTurnInfo();
+      setTimeout(() => {
+        const card = aiChooseCard();
+        if (!card) {
+          log("L'IA ne peut jouer aucune carte.");
+          gameState.currentPlayer = "human";
+          updateTurnInfo();
+          return;
+        }
+
+        const state = boardState.cards[card.index];
+
+        if (canAfford(ai, card.cost)) {
+          payCost(ai, card.cost);
+          applyEffect(ai, card.effect);
+          state.taken = true;
+          log(`L'IA construit ${card.name}.`);
+        } else {
+          ai.gold += 2;
+          state.taken = true;
+          log(`L'IA défausse ${card.name} et gagne 2 or.`);
+        }
+
+        updateResourcesUI();
+        renderBoard();
+        checkEndOfBoard();
+
+        if (!gameState.finished) {
+          gameState.currentPlayer = "human";
+          updateTurnInfo();
+        }
+      }, 600);
+    }
+
+    // --- Actions Joueur ---
+
+    function buildSelectedCard() {
+      if (selectedCardIndex === null || gameState.currentPlayer !== "human" || gameState.finished) return;
+      const card = cardsAge1[selectedCardIndex];
+      const state = boardState.cards[selectedCardIndex];
+      if (state.taken) return;
+      if (!canAfford(human, card.cost)) {
+        log("Tu ne peux pas payer cette carte.");
+        return;
+      }
+      payCost(human, card.cost);
+      applyEffect(human, card.effect);
+      state.taken = true;
+      log(`Tu construis ${card.name}.`);
+      selectedCardIndex = null;
+      document.getElementById("cardDetails").textContent = "Sélectionne une carte accessible.";
+      document.getElementById("buildBtn").disabled = true;
+      document.getElementById("discardBtn").disabled = true;
+      updateResourcesUI();
+      renderBoard();
+      checkEndOfBoard();
+
+      if (!gameState.finished) {
+        gameState.currentPlayer = "ai";
+        updateTurnInfo();
+        aiPlayTurn();
+      }
+    }
+
+    function discardSelectedCard() {
+      if (selectedCardIndex === null || gameState.currentPlayer !== "human" || gameState.finished) return;
+      const card = cardsAge1[selectedCardIndex];
+      const state = boardState.cards[selectedCardIndex];
+      if (state.taken) return;
+      human.gold += 2;
+      state.taken = true;
+      log(`Tu défausses ${card.name} et gagnes 2 or.`);
+      selectedCardIndex = null;
+      document.getElementById("cardDetails").textContent = "Sélectionne une carte accessible.";
+      document.getElementById("buildBtn").disabled = true;
+      document.getElementById("discardBtn").disabled = true;
+      updateResourcesUI();
+      renderBoard();
+      checkEndOfBoard();
+
+      if (!gameState.finished) {
+        gameState.currentPlayer = "ai";
+        updateTurnInfo();
+        aiPlayTurn();
+      }
+    }
+
+    // --- Initialisation ---
 
     function init() {
-        const gridEl = document.getElementById('grid');
-        for (let i = 0; i < COLS * ROWS; i++) {
-            let r = Math.random();
-            let type = (r > 0.98) ? 'oil' : (r > 0.96) ? 'quartz' : (r > 0.93) ? 'copper' : (r > 0.88) ? 'iron' : 'empty';
-            gridData.push({ id: i, type, build: null, deadUntil: 0 });
-            let cell = document.createElement('div');
-            cell.className = `cell ${type}`; cell.id = 'c-' + i;
-            cell.onclick = () => handleCellClick(i);
-            gridEl.appendChild(cell);
-        }
-        updateTierUI();
-        setInterval(spawnMeteor, 60000); // Météore toutes les minutes
+      document.getElementById("buildBtn").addEventListener("click", buildSelectedCard);
+      document.getElementById("discardBtn").addEventListener("click", discardSelectedCard);
+
+      document.getElementById("difficultySelect").addEventListener("change", (e) => {
+        setDifficulty(e.target.value);
+        log(`Difficulté IA : ${e.target.options[e.target.selectedIndex].text}`);
+      });
+
+      setDifficulty("normal");
+      updateResourcesUI();
+      updateMilitaryUI();
+      updateTurnInfo();
+      renderBoard();
+      log("Bienvenue dans le prototype. Tu joues contre une IA à 3 niveaux de difficulté.");
     }
-
-    function isProtected(index) {
-        const r = 5;
-        const targetX = index % COLS;
-        const targetY = Math.floor(index / COLS);
-        
-        return gridData.some((c, i) => {
-            if (c.build !== 'shield_tower' || Date.now() < c.deadUntil) return false;
-            const towerX = i % COLS;
-            const towerY = Math.floor(i / COLS);
-            return Math.abs(targetX - towerX) <= r && Math.abs(targetY - towerY) <= r;
-        });
-    }
-
-    function spawnMeteor() {
-        document.getElementById('alert').style.display = 'block';
-        setTimeout(() => {
-            document.getElementById('alert').style.display = 'none';
-            const center = Math.floor(Math.random() * (COLS * ROWS));
-            const targets = [center, center+1, center-1, center+COLS, center-COLS];
-            
-            targets.forEach(idx => {
-                if(gridData[idx]) {
-                    if (isProtected(idx)) {
-                        console.log("Météore bloqué par le bouclier !");
-                    } else {
-                        gridData[idx].build = null; 
-                        gridData[idx].deadUntil = Date.now() + 30000;
-                    }
-                }
-            });
-        }, 3000);
-    }
-
-    function handleCellClick(i) {
-        if(Date.now() < gridData[i].deadUntil) return;
-        if (state.mode === 'recycle') { gridData[i].build = null; return; }
-        if (gridData[i].build || !state.mode) return;
-        if (state.mode === 'miner' && gridData[i].type === 'empty') return;
-
-        let cost = COSTS[state.mode];
-        if (cost && Object.keys(cost).every(r => state.res[r] >= cost[r])) {
-            Object.keys(cost).forEach(r => state.res[r] -= cost[r]);
-            gridData[i].build = state.mode;
-        }
-    }
-
-    function setMode(m) {
-        state.mode = (state.mode === m) ? null : m;
-        document.querySelectorAll('.build-btn').forEach(b => b.classList.remove('active'));
-        if(state.mode) {
-            const btn = document.getElementById('btn-' + m);
-            if(btn) btn.classList.add('active');
-        }
-    }
-
-    function updateTierUI() {
-        const list = document.getElementById('tier-list');
-        list.innerHTML = "";
-        const TECHS = [
-            { id: 1, name: "Base", bonus: "x1", cost: {} },
-            { id: 2, name: "Industrie", bonus: "x1.5", cost: { iron: 1000, copper: 300 } },
-            { id: 3, name: "Électronique", bonus: "x2.5", cost: { glass: 200, cable: 200 } }
-        ];
-        TECHS.forEach(t => {
-            let div = document.createElement('div');
-            div.className = `tech-item ${state.tier === t.id ? 'current' : ''}`;
-            div.innerHTML = `<b>TIER ${t.id}</b><br><small>${t.bonus}</small><br>`;
-            list.appendChild(div);
-        });
-    }
-
-    setInterval(() => {
-        state.time = (state.time + 1) % 60;
-        const isNight = state.time >= 30;
-        document.getElementById('main-body').className = isNight ? 'night-mode' : '';
-        document.getElementById('time-display').innerText = isNight ? '🌙 NUIT' : '☀️ JOUR';
-
-        let diff = { iron: 0, copper: 0, quartz: 0, oil: 0, glass: 0, plastic: 0, cable: 0, motor: 0, battery: 0, robot: 0, rocket: 0 };
-
-        let prod = gridData.filter(c => c.build === 'solar').length * (isNight ? 2 : 15);
-        gridData.filter(c => c.build === 'oil_gen').forEach(c => { 
-            if(state.res.oil >= 1) { state.res.oil -= 1; diff.oil -= 1; prod += 80; } 
-        });
-
-        state.maxEnergy = gridData.filter(c => c.build === 'battery_block').length * 30;
-        let need = 0; 
-        gridData.forEach(c => {
-            if(!c.build || Date.now() < c.deadUntil) return;
-            const pMap = { miner:8, glass_factory:10, plastic_factory:12, cable_factory:8, motor_factory:15, battery_factory:20, robot_factory:40, rocket_factory:100, shield_tower:50 };
-            if(pMap[c.build]) need += pMap[c.build];
-        });
-
-        let totalAvailable = prod + state.energy;
-        let powerRatio = need > 0 ? Math.min(1, totalAvailable / need) : 1;
-        state.energy = Math.max(0, Math.min(state.maxEnergy, state.energy + (prod - (need * powerRatio))));
-
-        const mult = {1:1, 2:1.5, 3:2.5, 4:5}[state.tier] * powerRatio;
-
-        gridData.forEach((c, idx) => {
-            const el = document.getElementById('c-' + idx);
-            const isDead = Date.now() < c.deadUntil;
-            const protected = isProtected(idx);
-            
-            el.className = `cell ${c.type} ${isDead ? 'impact' : ''} ${protected ? 'shielded' : ''}`;
-            const icons = { solar:'☀️', oil_gen:'🔥', battery_block:'🗄️', miner:'⛏️', glass_factory:'🏺', plastic_factory:'🧪', motor_factory:'⚙️', cable_factory:'🔌', battery_factory:'🔋', robot_factory:'🤖', rocket_factory:'🚀', shield_tower:'🛡️' };
-            el.innerHTML = c.build ? icons[c.build] : (isDead ? '🔥' : '');
-
-            if(c.build && !isDead && powerRatio > 0) {
-                if(c.build === 'miner') { state.res[c.type] += mult; diff[c.type] += mult; }
-                if(c.build === 'glass_factory' && state.res.quartz >= 1) { state.res.quartz--; diff.quartz--; state.res.glass += mult; diff.glass += mult; }
-                if(c.build === 'plastic_factory' && state.res.oil >= 1) { state.res.oil--; diff.oil--; state.res.plastic += mult; diff.plastic += mult; }
-                if(c.build === 'motor_factory' && state.res.iron >= 1 && state.res.copper >= 1) { state.res.iron--; state.res.copper--; diff.iron--; diff.copper--; state.res.motor += mult; diff.motor += mult; }
-                if(c.build === 'cable_factory' && state.res.copper >= 1) { state.res.copper--; diff.copper--; state.res.cable += mult; diff.cable += mult; }
-                if(c.build === 'battery_factory' && state.res.iron >= 2 && state.res.copper >= 1 && state.res.cable >= 1) { state.res.iron-=2; state.res.copper--; state.res.cable--; diff.iron-=2; diff.copper--; diff.cable--; state.res.battery += mult; diff.battery += mult; }
-                if(c.build === 'robot_factory' && state.res.motor >= 3 && state.res.cable >= 5 && state.res.plastic >= 2) { state.res.motor-=3; state.res.cable-=5; state.res.plastic-=2; diff.motor-=3; diff.cable-=5; diff.plastic-=2; state.res.robot += mult; diff.robot += mult; }
-                if(c.build === 'rocket_factory' && state.res.battery >= 3 && state.res.motor >= 3 && state.res.robot >= 2) { state.res.battery-=3; state.res.motor-=3; state.res.robot-=2; diff.battery-=3; diff.motor-=3; diff.robot-=2; state.res.rocket += mult; diff.rocket += mult; }
-            }
-        });
-
-        document.getElementById('res-display').innerHTML = Object.entries(state.res).map(([k,v]) => {
-            let d = diff[k];
-            let dText = d >= 0 ? `<span class="prod-stat plus">+${d.toFixed(1)}</span>` : `<span class="prod-stat minus">${d.toFixed(1)}</span>`;
-            return `<div class="res-item"><span>${k.toUpperCase().slice(0,3)}: ${Math.floor(v)}</span>${dText}</div>`;
-        }).join('');
-        
-        document.getElementById('power-fill').style.width = (state.maxEnergy > 0 ? (state.energy/state.maxEnergy)*100 : 0) + '%';
-        document.getElementById('power-text').innerText = `STOCK: ${Math.floor(state.energy)} / ${state.maxEnergy}`;
-        document.getElementById('power-stats').innerText = `PROD: ${prod}W | BESOIN: ${Math.floor(need)}W`;
-    }, 1000);
 
     init();
-</script>
+  </script>
 </body>
 </html>
