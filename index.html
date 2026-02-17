@@ -1,817 +1,361 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8" />
-  <title>Dynasties Duel - IA 3 niveaux</title>
-  <style>
-    body {
-      margin: 0;
-      font-family: system-ui, sans-serif;
-      background: #020617;
-      color: #e5e7eb;
-      display: flex;
-      flex-direction: column;
-      height: 100vh;
-    }
+<meta charset="UTF-8" />
+<title>Dynasties Duel Mobile</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    header {
-      padding: 10px 16px;
-      background: #020617;
-      border-bottom: 1px solid #1f2937;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-size: 14px;
-      gap: 12px;
-    }
+<style>
+body {
+  margin: 0;
+  font-family: system-ui, sans-serif;
+  background: #0f172a;
+  color: #e2e8f0;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
 
-    #difficultySelect {
-      background: #111827;
-      color: #e5e7eb;
-      border-radius: 999px;
-      border: 1px solid #374151;
-      padding: 4px 8px;
-      font-size: 12px;
-    }
+header {
+  padding: 12px;
+  background: #1e293b;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 16px;
+}
 
-    #game {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 8px;
-      box-sizing: border-box;
-    }
+#difficulty {
+  background: #334155;
+  color: white;
+  border: none;
+  padding: 6px 10px;
+  border-radius: 6px;
+}
 
-    #board {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      gap: 8px;
-      width: 100%;
-      max-width: 480px;
-      margin-top: 8px;
-    }
+#board {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 12px;
+  padding: 10px;
+}
 
-    .row {
-      display: flex;
-      justify-content: center;
-      gap: 8px;
-    }
+.row {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+}
 
-    .card {
-      width: 70px;
-      height: 100px;
-      border-radius: 8px;
-      border: 1px solid #4b5563;
-      background: #111827;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      padding: 4px;
-      box-sizing: border-box;
-      font-size: 10px;
-      cursor: pointer;
-      position: relative;
-      transition: transform 0.1s, box-shadow 0.1s, border-color 0.1s;
-    }
+.card {
+  width: 110px;
+  height: 160px;
+  background: #1e293b;
+  border: 2px solid #475569;
+  border-radius: 10px;
+  padding: 8px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  font-size: 14px;
+  cursor: pointer;
+}
 
-    .card.blocked {
-      opacity: 0.3;
-      cursor: default;
-    }
+.card.blocked {
+  opacity: 0.3;
+  cursor: default;
+}
 
-    .card.selected {
-      border-color: #facc15;
-      box-shadow: 0 0 0 2px rgba(250, 204, 21, 0.4);
-      transform: translateY(-2px);
-    }
+.card.selected {
+  border-color: #facc15;
+  box-shadow: 0 0 10px #facc15;
+}
 
-    .card-type {
-      font-weight: bold;
-      font-size: 9px;
-      text-transform: uppercase;
-    }
+#panel {
+  background: #1e293b;
+  padding: 12px;
+  border-top: 2px solid #334155;
+}
 
-    .card-name {
-      font-size: 11px;
-      font-weight: 600;
-    }
+#actions button {
+  width: 48%;
+  padding: 12px;
+  font-size: 16px;
+  border-radius: 8px;
+  border: none;
+  color: white;
+}
 
-    .card-cost,
-    .card-effect {
-      font-size: 9px;
-      color: #9ca3af;
-    }
+#buildBtn { background: #3b82f6; }
+#discardBtn { background: #64748b; }
 
-    #panels {
-      width: 100%;
-      max-width: 480px;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      margin-top: 4px;
-    }
-
-    .playerPanel {
-      padding: 8px;
-      box-sizing: border-box;
-      border-top: 1px solid #1f2937;
-      background: #020617;
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-      font-size: 11px;
-    }
-
-    .panelHeader {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-size: 12px;
-      font-weight: 600;
-    }
-
-    .panelHeader span.role {
-      font-size: 11px;
-      color: #9ca3af;
-    }
-
-    .resources {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
-      font-size: 11px;
-    }
-
-    .resources div {
-      min-width: 80px;
-    }
-
-    #actions {
-      display: flex;
-      gap: 8px;
-    }
-
-    button {
-      flex: 1;
-      padding: 8px;
-      border-radius: 999px;
-      border: none;
-      font-size: 12px;
-      font-weight: 600;
-      cursor: pointer;
-      background: #1d4ed8;
-      color: white;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      gap: 4px;
-    }
-
-    button.secondary {
-      background: #374151;
-    }
-
-    button:disabled {
-      opacity: 0.4;
-      cursor: default;
-    }
-
-    #log {
-      font-size: 11px;
-      color: #9ca3af;
-      max-height: 80px;
-      overflow-y: auto;
-      border-top: 1px solid #1f2937;
-      padding-top: 4px;
-    }
-
-    #cardDetails {
-      font-size: 11px;
-      color: #e5e7eb;
-      min-height: 32px;
-    }
-
-    #turnInfo {
-      font-size: 12px;
-      font-weight: 600;
-    }
-
-    .militaryTrack {
-      width: 100%;
-      max-width: 480px;
-      margin-top: 4px;
-      font-size: 10px;
-      color: #9ca3af;
-    }
-
-    .militaryBar {
-      height: 6px;
-      background: #111827;
-      border-radius: 999px;
-      overflow: hidden;
-      margin-top: 2px;
-    }
-
-    .militaryMarker {
-      height: 100%;
-      width: 50%;
-      background: linear-gradient(90deg, #22c55e, #ef4444);
-      transform-origin: left center;
-      transition: transform 0.2s;
-    }
-  </style>
+#log {
+  margin-top: 10px;
+  font-size: 14px;
+  max-height: 80px;
+  overflow-y: auto;
+}
+</style>
 </head>
+
 <body>
-  <header>
-    <div>Dynasties Duel — Prototype Âge I</div>
-    <div style="display:flex;align-items:center;gap:6px;">
-      <label for="difficultySelect" style="font-size:12px;">IA :</label>
-      <select id="difficultySelect">
-        <option value="easy">Facile</option>
-        <option value="normal" selected>Normal</option>
-        <option value="hard">Expert</option>
-      </select>
-    </div>
-    <div id="turnInfo">Tour du joueur</div>
-  </header>
 
-  <div id="game">
-    <div id="board"></div>
+<header>
+  <div>Dynasties Duel</div>
+  <select id="difficulty">
+    <option value="easy">Facile</option>
+    <option value="normal" selected>Normal</option>
+    <option value="hard">Expert</option>
+  </select>
+</header>
 
-    <div class="militaryTrack">
-      Piste militaire (Joueur ← 0 → IA)
-      <div class="militaryBar">
-        <div id="militaryMarker" class="militaryMarker"></div>
-      </div>
-    </div>
+<div id="board"></div>
 
-    <div id="panels">
-      <div class="playerPanel" id="humanPanel">
-        <div class="panelHeader">
-          <div>Joueur</div>
-          <span class="role">Humain</span>
-        </div>
-        <div id="humanResources" class="resources"></div>
-        <div id="cardDetails">Sélectionne une carte accessible.</div>
-        <div id="actions">
-          <button id="buildBtn" disabled>Construire</button>
-          <button id="discardBtn" class="secondary" disabled>Défausser (+2 or)</button>
-        </div>
-      </div>
-
-      <div class="playerPanel" id="aiPanel">
-        <div class="panelHeader">
-          <div>Adversaire</div>
-          <span class="role">IA</span>
-        </div>
-        <div id="aiResources" class="resources"></div>
-        <div id="log"></div>
-      </div>
-    </div>
+<div id="panel">
+  <div id="details">Sélectionne une carte.</div>
+  <div id="actions" style="display:flex;justify-content:space-between;margin-top:10px;">
+    <button id="buildBtn" disabled>Construire</button>
+    <button id="discardBtn" disabled>Défausser</button>
   </div>
+  <div id="log"></div>
+</div>
 
-  <script>
-    // --- Données de base ---
+<script>
+/* --- CARTES --- */
+const cards = [
+  {id:0, name:"Bois", type:"ressource", cost:{}, effect:{wood:1}},
+  {id:1, name:"Argile", type:"ressource", cost:{}, effect:{clay:1}},
+  {id:2, name:"Pierre", type:"ressource", cost:{}, effect:{stone:1}},
+  {id:3, name:"Caserne", type:"militaire", cost:{clay:1}, effect:{military:1}},
+  {id:4, name:"Bibliothèque", type:"science", cost:{wood:1}, effect:{science:"compas"}},
+  {id:5, name:"Temple", type:"civique", cost:{stone:1}, effect:{victory:3}}
+];
 
-    const cardsAge1 = [
-      // Ligne du bas (3 cartes)
-      {
-        id: "wood_camp",
-        name: "Camp de bois",
-        age: 1,
-        type: "ressource",
-        cost: { gold: 0 },
-        effect: { wood: 1 }
-      },
-      {
-        id: "clay_pit",
-        name: "Fosse d'argile",
-        age: 1,
-        type: "ressource",
-        cost: { gold: 0 },
-        effect: { clay: 1 }
-      },
-      {
-        id: "stone_quarry",
-        name: "Carrière",
-        age: 1,
-        type: "ressource",
-        cost: { gold: 0 },
-        effect: { stone: 1 }
-      },
+/* --- PYRAMIDE --- */
+const layout = [
+  [5],
+  [3,4],
+  [0,1,2]
+];
 
-      // Ligne du milieu (2 cartes)
-      {
-        id: "barracks",
-        name: "Caserne",
-        age: 1,
-        type: "militaire",
-        cost: { clay: 1 },
-        effect: { military: 1 }
-      },
-      {
-        id: "library",
-        name: "Bibliothèque",
-        age: 1,
-        type: "science",
-        cost: { wood: 1 },
-        effect: { science: "compas" }
-      },
+/* --- ÉTAT --- */
+let human = {gold:6, wood:0, clay:0, stone:0, military:0, science:[], victory:0};
+let ai =    {gold:6, wood:0, clay:0, stone:0, military:0, science:[], victory:0};
 
-      // Ligne du haut (1 carte)
-      {
-        id: "temple",
-        name: "Temple",
-        age: 1,
-        type: "civique",
-        cost: { stone: 1 },
-        effect: { victory: 3 }
-      }
-    ];
+let taken = [false,false,false,false,false,false];
+let selected = null;
+let turn = "human";
 
-    const pyramidLayout = [
-      [5],
-      [3, 4],
-      [0, 1, 2]
-    ];
+/* --- UI --- */
+function log(msg){
+  document.getElementById("log").innerHTML = msg + "<br>" + document.getElementById("log").innerHTML;
+}
 
-    // --- État du jeu ---
+function render(){
+  const board = document.getElementById("board");
+  board.innerHTML = "";
 
-    const human = {
-      name: "Joueur",
-      gold: 6,
-      wood: 0,
-      clay: 0,
-      stone: 0,
-      military: 0,
-      science: [],
-      victory: 0
-    };
+  layout.forEach((row,r)=>{
+    const div = document.createElement("div");
+    div.className = "row";
 
-    const ai = {
-      name: "IA",
-      gold: 6,
-      wood: 0,
-      clay: 0,
-      stone: 0,
-      military: 0,
-      science: [],
-      victory: 0,
-      strategy: "balanced" // "military", "science", "balanced"
-    };
+    row.forEach((id,c)=>{
+      const card = cards[id];
+      const el = document.createElement("div");
+      el.className = "card";
 
-    const gameState = {
-      currentPlayer: "human", // "human" ou "ai"
-      difficulty: "normal",
-      militaryTrack: 0, // -6 (IA gagne) à +6 (Humain gagne)
-      finished: false
-    };
+      if(taken[id]){ el.style.visibility="hidden"; div.appendChild(el); return; }
 
-    const boardState = {
-      cards: cardsAge1.map((card, index) => ({
-        index,
-        taken: false
-      }))
-    };
+      if(isBlocked(r,c)) el.classList.add("blocked");
+      if(selected===id) el.classList.add("selected");
 
-    let selectedCardIndex = null;
-
-    // --- Utilitaires généraux ---
-
-    function log(message) {
-      const logDiv = document.getElementById("log");
-      const line = document.createElement("div");
-      line.textContent = message;
-      logDiv.prepend(line);
-    }
-
-    function canAfford(player, cost) {
-      if (!cost) return true;
-      if (cost.gold && player.gold < cost.gold) return false;
-      if (cost.wood && player.wood < cost.wood) return false;
-      if (cost.clay && player.clay < cost.clay) return false;
-      if (cost.stone && player.stone < cost.stone) return false;
-      return true;
-    }
-
-    function payCost(player, cost) {
-      if (!cost) return;
-      if (cost.gold) player.gold -= cost.gold;
-      if (cost.wood) player.wood -= cost.wood;
-      if (cost.clay) player.clay -= cost.clay;
-      if (cost.stone) player.stone -= cost.stone;
-    }
-
-    function applyEffect(player, effect) {
-      if (!effect) return;
-      if (effect.gold) player.gold += effect.gold;
-      if (effect.wood) player.wood += effect.wood;
-      if (effect.clay) player.clay += effect.clay;
-      if (effect.stone) player.stone += effect.stone;
-      if (effect.military) {
-        player.military += effect.military;
-        if (player === human) {
-          gameState.militaryTrack += effect.military;
-        } else {
-          gameState.militaryTrack -= effect.military;
-        }
-        updateMilitaryUI();
-        checkMilitaryVictory();
-      }
-      if (effect.victory) player.victory += effect.victory;
-      if (effect.science) player.science.push(effect.science);
-    }
-
-    function formatCost(cost) {
-      if (!cost) return "0";
-      const parts = [];
-      if (cost.gold) parts.push(cost.gold + " or");
-      if (cost.wood) parts.push(cost.wood + " bois");
-      if (cost.clay) parts.push(cost.clay + " argile");
-      if (cost.stone) parts.push(cost.stone + " pierre");
-      return parts.join(", ") || "0";
-    }
-
-    function formatEffect(effect) {
-      if (!effect) return "—";
-      const parts = [];
-      if (effect.gold) parts.push("+" + effect.gold + " or");
-      if (effect.wood) parts.push("+" + effect.wood + " bois");
-      if (effect.clay) parts.push("+" + effect.clay + " argile");
-      if (effect.stone) parts.push("+" + effect.stone + " pierre");
-      if (effect.military) parts.push("+" + effect.military + " militaire");
-      if (effect.victory) parts.push("+" + effect.victory + " PV");
-      if (effect.science) parts.push("science: " + effect.science);
-      return parts.join(", ") || "—";
-    }
-
-    function isCardBlocked(rowIndex, colIndex) {
-      if (rowIndex === 0) return false;
-      const aboveRow = pyramidLayout[rowIndex - 1];
-      const currentRow = pyramidLayout[rowIndex];
-
-      let blockers = [];
-      if (rowIndex === 2) {
-        if (colIndex === 0) blockers = [aboveRow[0]];
-        if (colIndex === 1) blockers = [aboveRow[0], aboveRow[1]];
-        if (colIndex === 2) blockers = [aboveRow[1]];
-      } else if (rowIndex === 1) {
-        if (colIndex === 0) blockers = [aboveRow[0]];
-        if (colIndex === 1) blockers = [aboveRow[0]];
-      }
-
-      for (const idx of blockers) {
-        const state = boardState.cards[idx];
-        if (!state.taken) return true;
-      }
-      return false;
-    }
-
-    function getAccessibleCards() {
-      const result = [];
-      pyramidLayout.forEach((row, rowIndex) => {
-        row.forEach((cardIndex, colIndex) => {
-          const state = boardState.cards[cardIndex];
-          if (state.taken) return;
-          const blocked = isCardBlocked(rowIndex, colIndex);
-          if (!blocked) {
-            result.push(cardsAge1[cardIndex]);
-          }
-        });
-      });
-      return result;
-    }
-
-    // --- UI ---
-
-    function updateResourcesUI() {
-      const humanDiv = document.getElementById("humanResources");
-      humanDiv.innerHTML = `
-        <div><strong>Or :</strong> ${human.gold}</div>
-        <div><strong>Bois :</strong> ${human.wood}</div>
-        <div><strong>Argile :</strong> ${human.clay}</div>
-        <div><strong>Pierre :</strong> ${human.stone}</div>
-        <div><strong>Militaire :</strong> ${human.military}</div>
-        <div><strong>Victoire :</strong> ${human.victory}</div>
+      el.innerHTML = `
+        <div><b>${card.name}</b></div>
+        <div>Type: ${card.type}</div>
+        <div>Coût: ${formatCost(card.cost)}</div>
+        <div>Effet: ${formatEffect(card.effect)}</div>
       `;
 
-      const aiDiv = document.getElementById("aiResources");
-      aiDiv.innerHTML = `
-        <div><strong>Or :</strong> ${ai.gold}</div>
-        <div><strong>Bois :</strong> ${ai.wood}</div>
-        <div><strong>Argile :</strong> ${ai.clay}</div>
-        <div><strong>Pierre :</strong> ${ai.stone}</div>
-        <div><strong>Militaire :</strong> ${ai.military}</div>
-        <div><strong>Victoire :</strong> ${ai.victory}</div>
-      `;
-    }
+      el.onclick = ()=>{
+        if(turn!=="human") return;
+        if(isBlocked(r,c)) return;
+        selected = id;
+        updateButtons();
+        render();
+      };
 
-    function updateMilitaryUI() {
-      const marker = document.getElementById("militaryMarker");
-      // gameState.militaryTrack va de -6 à +6
-      const t = (gameState.militaryTrack + 6) / 12; // 0 à 1
-      marker.style.transform = `scaleX(${t})`;
-    }
+      div.appendChild(el);
+    });
 
-    function updateTurnInfo() {
-      const turnInfo = document.getElementById("turnInfo");
-      if (gameState.finished) {
-        turnInfo.textContent = "Partie terminée";
-      } else if (gameState.currentPlayer === "human") {
-        turnInfo.textContent = "Tour du joueur";
-      } else {
-        turnInfo.textContent = "Tour de l'IA";
-      }
-    }
+    board.appendChild(div);
+  });
+}
 
-    function renderBoard() {
-      const boardDiv = document.getElementById("board");
-      boardDiv.innerHTML = "";
+function formatCost(c){
+  let out=[];
+  if(c.gold) out.push(c.gold+" or");
+  if(c.wood) out.push(c.wood+" bois");
+  if(c.clay) out.push(c.clay+" argile");
+  if(c.stone) out.push(c.stone+" pierre");
+  return out.length?out.join(", "):"0";
+}
 
-      pyramidLayout.forEach((row, rowIndex) => {
-        const rowDiv = document.createElement("div");
-        rowDiv.className = "row";
+function formatEffect(e){
+  let out=[];
+  if(e.wood) out.push("+1 bois");
+  if(e.clay) out.push("+1 argile");
+  if(e.stone) out.push("+1 pierre");
+  if(e.military) out.push("+1 militaire");
+  if(e.victory) out.push("+"+e.victory+" PV");
+  if(e.science) out.push("science");
+  return out.join(", ");
+}
 
-        row.forEach((cardIndex, colIndex) => {
-          const cardData = cardsAge1[cardIndex];
-          const state = boardState.cards[cardIndex];
+/* --- BLOQUAGE --- */
+function isBlocked(r,c){
+  if(r===0) return false;
+  const above = layout[r-1];
+  if(r===2){
+    if(c===0) return !taken[above[0]];
+    if(c===1) return !taken[above[0]] || !taken[above[1]];
+    if(c===2) return !taken[above[1]];
+  }
+  if(r===1){
+    return !taken[above[0]];
+  }
+  return false;
+}
 
-          const cardDiv = document.createElement("div");
-          cardDiv.className = "card";
+/* --- ACTIONS --- */
+function canPay(p,c){
+  if(c.gold && p.gold<c.gold) return false;
+  if(c.wood && p.wood<c.wood) return false;
+  if(c.clay && p.clay<c.clay) return false;
+  if(c.stone && p.stone<c.stone) return false;
+  return true;
+}
 
-          if (state.taken) {
-            cardDiv.style.visibility = "hidden";
-          } else {
-            const blocked = isCardBlocked(rowIndex, colIndex);
-            if (blocked) cardDiv.classList.add("blocked");
+function apply(p,e){
+  if(e.wood) p.wood++;
+  if(e.clay) p.clay++;
+  if(e.stone) p.stone++;
+  if(e.military) p.military++;
+  if(e.victory) p.victory+=e.victory;
+  if(e.science) p.science.push(e.science);
+}
 
-            cardDiv.dataset.index = cardIndex;
+function build(){
+  if(selected===null) return;
+  const card = cards[selected];
+  if(!canPay(human,card.cost)) return;
 
-            const typeDiv = document.createElement("div");
-            typeDiv.className = "card-type";
-            typeDiv.textContent = cardData.type;
+  pay(human,card.cost);
+  apply(human,card.effect);
+  taken[selected]=true;
+  log("Tu construis "+card.name);
+  selected=null;
+  updateButtons();
+  render();
+  setTimeout(aiTurn,600);
+}
 
-            const nameDiv = document.createElement("div");
-            nameDiv.className = "card-name";
-            nameDiv.textContent = cardData.name;
+function discard(){
+  if(selected===null) return;
+  taken[selected]=true;
+  human.gold+=2;
+  log("Tu défausses et gagnes 2 or");
+  selected=null;
+  updateButtons();
+  render();
+  setTimeout(aiTurn,600);
+}
 
-            const costDiv = document.createElement("div");
-            costDiv.className = "card-cost";
-            costDiv.textContent = "Coût: " + formatCost(cardData.cost);
+function pay(p,c){
+  if(c.gold) p.gold-=c.gold;
+  if(c.wood) p.wood-=c.wood;
+  if(c.clay) p.clay-=c.clay;
+  if(c.stone) p.stone-=c.stone;
+}
 
-            const effectDiv = document.createElement("div");
-            effectDiv.className = "card-effect";
-            effectDiv.textContent = "Effet: " + formatEffect(cardData.effect);
+function updateButtons(){
+  const b = document.getElementById("buildBtn");
+  const d = document.getElementById("discardBtn");
 
-            cardDiv.appendChild(typeDiv);
-            cardDiv.appendChild(nameDiv);
-            cardDiv.appendChild(costDiv);
-            cardDiv.appendChild(effectDiv);
+  if(selected===null){
+    b.disabled = true;
+    d.disabled = true;
+    return;
+  }
 
-            cardDiv.addEventListener("click", () => {
-              if (gameState.currentPlayer !== "human") return;
-              if (blocked) return;
-              selectCard(cardIndex);
-            });
+  const card = cards[selected];
+  b.disabled = !canPay(human,card.cost);
+  d.disabled = false;
+}
 
-            if (selectedCardIndex === cardIndex) {
-              cardDiv.classList.add("selected");
-            }
-          }
+/* --- IA --- */
+function aiTurn(){
+  turn="ai";
+  const diff = document.getElementById("difficulty").value;
 
-          rowDiv.appendChild(cardDiv);
-        });
+  const choices = getAccessibleCards();
+  if(choices.length===0){ turn="human"; return; }
 
-        boardDiv.appendChild(rowDiv);
-      });
-    }
+  let best=null, bestScore=-999;
 
-    function selectCard(index) {
-      selectedCardIndex = index;
-      const card = cardsAge1[index];
-      const detailsDiv = document.getElementById("cardDetails");
-      detailsDiv.textContent =
-        `${card.name} — Type: ${card.type} — Coût: ${formatCost(card.cost)} — Effet: ${formatEffect(card.effect)}`;
+  choices.forEach(id=>{
+    const card = cards[id];
+    let s = scoreCard(card,ai,diff);
+    if(s>bestScore){ bestScore=s; best=id; }
+  });
 
-      const canBuild = canAfford(human, card.cost);
-      document.getElementById("buildBtn").disabled = !canBuild || gameState.finished;
-      document.getElementById("discardBtn").disabled = gameState.finished;
+  const card = cards[best];
+  if(canPay(ai,card.cost)){
+    pay(ai,card.cost);
+    apply(ai,card.effect);
+    log("IA construit "+card.name);
+  } else {
+    ai.gold+=2;
+    log("IA défausse "+card.name);
+  }
 
-      renderBoard();
-    }
+  taken[best]=true;
+  turn="human";
+  render();
+}
 
-    // --- Fin de partie ---
+function getAccessibleCards(){
+  let out=[];
+  layout.forEach((row,r)=>{
+    row.forEach((id,c)=>{
+      if(!taken[id] && !isBlocked(r,c)) out.push(id);
+    });
+  });
+  return out;
+}
 
-    function checkEndOfBoard() {
-      const remaining = boardState.cards.some(c => !c.taken);
-      if (!remaining && !gameState.finished) {
-        // Fin de l'âge I -> on calcule un vainqueur simple
-        let winner = null;
-        const humanScore = human.victory + human.military + human.science.length;
-        const aiScore = ai.victory + ai.military + ai.science.length;
+function scoreCard(card,p,diff){
+  let s=0;
+  if(card.type==="ressource") s+=2;
+  if(card.type==="militaire") s+=4;
+  if(card.type==="science") s+=5;
+  if(card.type==="civique") s+=card.effect.victory;
 
-        if (humanScore > aiScore) winner = "Humain";
-        else if (aiScore > humanScore) winner = "IA";
-        else winner = "Égalité";
+  if(!canPay(p,card.cost)) s-=100;
 
-        log(`Fin de l'âge I. Score Joueur: ${humanScore}, IA: ${aiScore}. Résultat: ${winner}.`);
-        gameState.finished = true;
-        updateTurnInfo();
-        document.getElementById("buildBtn").disabled = true;
-        document.getElementById("discardBtn").disabled = true;
-      }
-    }
+  if(diff==="easy") s+=Math.random()*2-1;
+  if(diff==="hard" && card.type==="science") s+=3;
 
-    function checkMilitaryVictory() {
-      if (gameState.militaryTrack >= 6 && !gameState.finished) {
-        log("Victoire militaire du Joueur !");
-        gameState.finished = true;
-        updateTurnInfo();
-      } else if (gameState.militaryTrack <= -6 && !gameState.finished) {
-        log("Victoire militaire de l'IA !");
-        gameState.finished = true;
-        updateTurnInfo();
-      }
-    }
+  return s;
+}
 
-    // --- IA ---
+/* --- INIT --- */
+document.getElementById("buildBtn").onclick = build;
+document.getElementById("discardBtn").onclick = discard;
 
-    function setDifficulty(diff) {
-      gameState.difficulty = diff;
-      if (diff === "easy") {
-        ai.strategy = "balanced";
-      } else if (diff === "normal") {
-        ai.strategy = "military";
-      } else {
-        ai.strategy = "science";
-      }
-    }
+render();
+</script>
 
-    function evaluateCardForAI(card) {
-      let score = 0;
-
-      // Valeur de base
-      if (card.type === "ressource") score += 2;
-      if (card.type === "militaire") score += 3;
-      if (card.type === "science") score += 4;
-      if (card.type === "civique") score += (card.effect.victory || 1);
-
-      // Stratégie
-      if (ai.strategy === "military" && card.type === "militaire") score += 3;
-      if (ai.strategy === "science" && card.type === "science") score += 3;
-
-      // Danger pour le joueur (un peu de “blocage”)
-      if (card.type === "science") score += 1;
-      if (card.type === "militaire") score += 1;
-
-      // Coût
-      if (!canAfford(ai, card.cost)) score -= 1000;
-
-      // Ajustement selon difficulté
-      if (gameState.difficulty === "easy") {
-        // IA un peu plus bête : bruit aléatoire
-        score += (Math.random() * 2 - 1); // -1 à +1
-      } else if (gameState.difficulty === "hard") {
-        // IA plus “fine” : bonus si carte utile au joueur
-        if (card.type === "science" || card.type === "militaire") {
-          score += 2;
-        }
-      }
-
-      return score;
-    }
-
-    function aiChooseCard() {
-      const accessible = getAccessibleCards();
-      if (accessible.length === 0) return null;
-
-      let bestCard = null;
-      let bestScore = -Infinity;
-
-      for (const card of accessible) {
-        const score = evaluateCardForAI(card);
-        if (score > bestScore) {
-          bestScore = score;
-          bestCard = card;
-        }
-      }
-
-      return bestCard;
-    }
-
-    function aiPlayTurn() {
-      if (gameState.finished) return;
-
-      updateTurnInfo();
-      setTimeout(() => {
-        const card = aiChooseCard();
-        if (!card) {
-          log("L'IA ne peut jouer aucune carte.");
-          gameState.currentPlayer = "human";
-          updateTurnInfo();
-          return;
-        }
-
-        const state = boardState.cards[card.index];
-
-        if (canAfford(ai, card.cost)) {
-          payCost(ai, card.cost);
-          applyEffect(ai, card.effect);
-          state.taken = true;
-          log(`L'IA construit ${card.name}.`);
-        } else {
-          ai.gold += 2;
-          state.taken = true;
-          log(`L'IA défausse ${card.name} et gagne 2 or.`);
-        }
-
-        updateResourcesUI();
-        renderBoard();
-        checkEndOfBoard();
-
-        if (!gameState.finished) {
-          gameState.currentPlayer = "human";
-          updateTurnInfo();
-        }
-      }, 600);
-    }
-
-    // --- Actions Joueur ---
-
-    function buildSelectedCard() {
-      if (selectedCardIndex === null || gameState.currentPlayer !== "human" || gameState.finished) return;
-      const card = cardsAge1[selectedCardIndex];
-      const state = boardState.cards[selectedCardIndex];
-      if (state.taken) return;
-      if (!canAfford(human, card.cost)) {
-        log("Tu ne peux pas payer cette carte.");
-        return;
-      }
-      payCost(human, card.cost);
-      applyEffect(human, card.effect);
-      state.taken = true;
-      log(`Tu construis ${card.name}.`);
-      selectedCardIndex = null;
-      document.getElementById("cardDetails").textContent = "Sélectionne une carte accessible.";
-      document.getElementById("buildBtn").disabled = true;
-      document.getElementById("discardBtn").disabled = true;
-      updateResourcesUI();
-      renderBoard();
-      checkEndOfBoard();
-
-      if (!gameState.finished) {
-        gameState.currentPlayer = "ai";
-        updateTurnInfo();
-        aiPlayTurn();
-      }
-    }
-
-    function discardSelectedCard() {
-      if (selectedCardIndex === null || gameState.currentPlayer !== "human" || gameState.finished) return;
-      const card = cardsAge1[selectedCardIndex];
-      const state = boardState.cards[selectedCardIndex];
-      if (state.taken) return;
-      human.gold += 2;
-      state.taken = true;
-      log(`Tu défausses ${card.name} et gagnes 2 or.`);
-      selectedCardIndex = null;
-      document.getElementById("cardDetails").textContent = "Sélectionne une carte accessible.";
-      document.getElementById("buildBtn").disabled = true;
-      document.getElementById("discardBtn").disabled = true;
-      updateResourcesUI();
-      renderBoard();
-      checkEndOfBoard();
-
-      if (!gameState.finished) {
-        gameState.currentPlayer = "ai";
-        updateTurnInfo();
-        aiPlayTurn();
-      }
-    }
-
-    // --- Initialisation ---
-
-    function init() {
-      document.getElementById("buildBtn").addEventListener("click", buildSelectedCard);
-      document.getElementById("discardBtn").addEventListener("click", discardSelectedCard);
-
-      document.getElementById("difficultySelect").addEventListener("change", (e) => {
-        setDifficulty(e.target.value);
-        log(`Difficulté IA : ${e.target.options[e.target.selectedIndex].text}`);
-      });
-
-      setDifficulty("normal");
-      updateResourcesUI();
-      updateMilitaryUI();
-      updateTurnInfo();
-      renderBoard();
-      log("Bienvenue dans le prototype. Tu joues contre une IA à 3 niveaux de difficulté.");
-    }
-
-    init();
-  </script>
 </body>
 </html>
