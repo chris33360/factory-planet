@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8" />
-<title>Dynasties Duel Mobile</title>
+<title>Dynasties Duel - Mobile</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
@@ -38,28 +38,28 @@ header {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  gap: 12px;
+  gap: 8px;
   padding: 10px;
 }
 
 .row {
   display: flex;
   justify-content: center;
-  gap: 12px;
+  gap: 8px;
 }
 
 .card {
-  width: 110px;
-  height: 160px;
+  width: 90px;
+  height: 130px;
   background: #1e293b;
   border: 2px solid #475569;
   border-radius: 10px;
-  padding: 8px;
+  padding: 6px;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  font-size: 14px;
+  font-size: 12px;
   cursor: pointer;
 }
 
@@ -77,6 +77,28 @@ header {
   background: #1e293b;
   padding: 12px;
   border-top: 2px solid #334155;
+}
+
+#stats {
+  display: flex;
+  justify-content: space-between;
+  font-size: 14px;
+  margin-bottom: 10px;
+}
+
+#builtCards {
+  display: flex;
+  overflow-x: auto;
+  gap: 6px;
+  padding: 6px 0;
+}
+
+.builtCard {
+  background: #334155;
+  padding: 4px 8px;
+  border-radius: 6px;
+  white-space: nowrap;
+  font-size: 12px;
 }
 
 #actions button {
@@ -114,43 +136,89 @@ header {
 <div id="board"></div>
 
 <div id="panel">
+
+  <div id="stats">
+    <div id="humanStats"></div>
+    <div id="aiStats"></div>
+  </div>
+
+  <div id="builtCards"></div>
+
   <div id="details">Sélectionne une carte.</div>
+
   <div id="actions" style="display:flex;justify-content:space-between;margin-top:10px;">
     <button id="buildBtn" disabled>Construire</button>
     <button id="discardBtn" disabled>Défausser</button>
   </div>
+
   <div id="log"></div>
 </div>
 
 <script>
-/* --- CARTES --- */
+/* --- CARTES ÂGE I OFFICIELLES (15 cartes) --- */
 const cards = [
   {id:0, name:"Bois", type:"ressource", cost:{}, effect:{wood:1}},
   {id:1, name:"Argile", type:"ressource", cost:{}, effect:{clay:1}},
   {id:2, name:"Pierre", type:"ressource", cost:{}, effect:{stone:1}},
-  {id:3, name:"Caserne", type:"militaire", cost:{clay:1}, effect:{military:1}},
-  {id:4, name:"Bibliothèque", type:"science", cost:{wood:1}, effect:{science:"compas"}},
-  {id:5, name:"Temple", type:"civique", cost:{stone:1}, effect:{victory:3}}
+  {id:3, name:"Scierie", type:"commerce", cost:{gold:2}, effect:{wood:1}},
+  {id:4, name:"Brique", type:"commerce", cost:{gold:2}, effect:{clay:1}},
+  {id:5, name:"Carrière", type:"commerce", cost:{gold:2}, effect:{stone:1}},
+  {id:6, name:"Caserne", type:"militaire", cost:{clay:1}, effect:{military:1}},
+  {id:7, name:"Tour de garde", type:"militaire", cost:{stone:1}, effect:{military:1}},
+  {id:8, name:"Écuries", type:"militaire", cost:{wood:1}, effect:{military:1}},
+  {id:9, name:"Bibliothèque", type:"science", cost:{wood:1}, effect:{science:"compas"}},
+  {id:10, name:"Atelier", type:"science", cost:{clay:1}, effect:{science:"roue"}},
+  {id:11, name:"Scriptorium", type:"science", cost:{gold:2}, effect:{science:"plume"}},
+  {id:12, name:"Temple", type:"civique", cost:{stone:1}, effect:{victory:3}},
+  {id:13, name:"Autel", type:"civique", cost:{}, effect:{victory:2}},
+  {id:14, name:"Théâtre", type:"civique", cost:{}, effect:{victory:1}}
 ];
 
-/* --- PYRAMIDE --- */
+/* --- PYRAMIDE 1-2-3-4-5 --- */
 const layout = [
-  [5],
-  [3,4],
-  [0,1,2]
+  [14],
+  [12,13],
+  [9,10,11],
+  [6,7,8,5],
+  [0,1,2,3,4]
 ];
 
 /* --- ÉTAT --- */
-let human = {gold:6, wood:0, clay:0, stone:0, military:0, science:[], victory:0};
-let ai =    {gold:6, wood:0, clay:0, stone:0, military:0, science:[], victory:0};
+let human = {gold:6, wood:0, clay:0, stone:0, military:0, science:[], victory:0, built:[]};
+let ai    = {gold:6, wood:0, clay:0, stone:0, military:0, science:[], victory:0, built:[]};
 
-let taken = [false,false,false,false,false,false];
+let taken = Array(cards.length).fill(false);
 let selected = null;
 let turn = "human";
 
 /* --- UI --- */
 function log(msg){
   document.getElementById("log").innerHTML = msg + "<br>" + document.getElementById("log").innerHTML;
+}
+
+function renderStats(){
+  document.getElementById("humanStats").innerHTML =
+    `👤 Or:${human.gold} B:${human.wood} A:${human.clay} P:${human.stone} M:${human.military} S:${human.science.length} PV:${human.victory}`;
+
+  document.getElementById("aiStats").innerHTML =
+    `🤖 Or:${ai.gold} B:${ai.wood} A:${ai.clay} P:${ai.stone} M:${ai.military} S:${ai.science.length} PV:${ai.victory}`;
+}
+
+function renderBuilt(){
+  const div = document.getElementById("builtCards");
+  div.innerHTML = "";
+  human.built.forEach(c=>{
+    const el = document.createElement("div");
+    el.className="builtCard";
+    el.textContent="👤 "+c.name;
+    div.appendChild(el);
+  });
+  ai.built.forEach(c=>{
+    const el = document.createElement("div");
+    el.className="builtCard";
+    el.textContent="🤖 "+c.name;
+    div.appendChild(el);
+  });
 }
 
 function render(){
@@ -173,9 +241,9 @@ function render(){
 
       el.innerHTML = `
         <div><b>${card.name}</b></div>
-        <div>Type: ${card.type}</div>
+        <div>${card.type}</div>
         <div>Coût: ${formatCost(card.cost)}</div>
-        <div>Effet: ${formatEffect(card.effect)}</div>
+        <div>${formatEffect(card.effect)}</div>
       `;
 
       el.onclick = ()=>{
@@ -191,6 +259,9 @@ function render(){
 
     board.appendChild(div);
   });
+
+  renderStats();
+  renderBuilt();
 }
 
 function formatCost(c){
@@ -217,6 +288,19 @@ function formatEffect(e){
 function isBlocked(r,c){
   if(r===0) return false;
   const above = layout[r-1];
+  if(r===4){
+    if(c===0) return !taken[above[0]];
+    if(c===1) return !taken[above[0]] || !taken[above[1]];
+    if(c===2) return !taken[above[1]] || !taken[above[2]];
+    if(c===3) return !taken[above[2]] || !taken[above[3]];
+    if(c===4) return !taken[above[3]];
+  }
+  if(r===3){
+    if(c===0) return !taken[above[0]];
+    if(c===1) return !taken[above[0]] || !taken[above[1]];
+    if(c===2) return !taken[above[1]] || !taken[above[2]];
+    if(c===3) return !taken[above[2]];
+  }
   if(r===2){
     if(c===0) return !taken[above[0]];
     if(c===1) return !taken[above[0]] || !taken[above[1]];
@@ -237,6 +321,13 @@ function canPay(p,c){
   return true;
 }
 
+function pay(p,c){
+  if(c.gold) p.gold-=c.gold;
+  if(c.wood) p.wood-=c.wood;
+  if(c.clay) p.clay-=c.clay;
+  if(c.stone) p.stone-=c.stone;
+}
+
 function apply(p,e){
   if(e.wood) p.wood++;
   if(e.clay) p.clay++;
@@ -253,7 +344,9 @@ function build(){
 
   pay(human,card.cost);
   apply(human,card.effect);
+  human.built.push(card);
   taken[selected]=true;
+
   log("Tu construis "+card.name);
   selected=null;
   updateButtons();
@@ -270,13 +363,6 @@ function discard(){
   updateButtons();
   render();
   setTimeout(aiTurn,600);
-}
-
-function pay(p,c){
-  if(c.gold) p.gold-=c.gold;
-  if(c.wood) p.wood-=c.wood;
-  if(c.clay) p.clay-=c.clay;
-  if(c.stone) p.stone-=c.stone;
 }
 
 function updateButtons(){
@@ -314,6 +400,7 @@ function aiTurn(){
   if(canPay(ai,card.cost)){
     pay(ai,card.cost);
     apply(ai,card.effect);
+    ai.built.push(card);
     log("IA construit "+card.name);
   } else {
     ai.gold+=2;
@@ -338,6 +425,7 @@ function getAccessibleCards(){
 function scoreCard(card,p,diff){
   let s=0;
   if(card.type==="ressource") s+=2;
+  if(card.type==="commerce") s+=3;
   if(card.type==="militaire") s+=4;
   if(card.type==="science") s+=5;
   if(card.type==="civique") s+=card.effect.victory;
